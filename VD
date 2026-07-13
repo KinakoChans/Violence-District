@@ -1,101 +1,174 @@
 --[[
-  VIOLENCE DISTRICT SCRIPT
-  Optimized for Delta Executor (Android)
-  No external libraries needed
+  VIOLENCE DISTRICT - FULL SCRIPT
+  For Delta Executor (Android)
+  All Features Included
 ]]
 
--- Variables
+-- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- GUI System (Simple, no library)
+-- ============== GUI SYSTEM ==============
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ViolenceDistrictGUI"
+ScreenGui.Name = "FullScriptGUI"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Shadow Effect
+local Shadow = Instance.new("Frame")
+Shadow.Size = UDim2.new(0, 360, 0, 520)
+Shadow.Position = UDim2.new(0.5, -180, 0.5, -260)
+Shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Shadow.BackgroundTransparency = 0.5
+Shadow.Visible = false
+Shadow.Parent = ScreenGui
 
 -- Main Frame
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 350, 0, 500)
-MainFrame.Position = UDim2.new(0.5, -175, 0.5, -250)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-MainFrame.BorderSizePixel = 2
-MainFrame.BorderColor3 = Color3.fromRGB(70, 85, 130)
+MainFrame.Size = UDim2.new(0, 360, 0, 520)
+MainFrame.Position = UDim2.new(0.5, -180, 0.5, -260)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Visible = false
 MainFrame.Parent = ScreenGui
 
--- UICorner
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
-UICorner.Parent = MainFrame
+-- Main Corner
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = MainFrame
 
--- Title
+-- Main Stroke
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(70, 85, 130)
+MainStroke.Thickness = 1.5
+MainStroke.Parent = MainFrame
+
+-- Header
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 50)
+Header.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+Header.BorderSizePixel = 0
+Header.Parent = MainFrame
+
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 12)
+HeaderCorner.Parent = Header
+
+local HeaderFill = Instance.new("Frame")
+HeaderFill.Size = UDim2.new(1, 0, 0, 20)
+HeaderFill.Position = UDim2.new(0, 0, 0, 30)
+HeaderFill.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+HeaderFill.BorderSizePixel = 0
+HeaderFill.Parent = Header
+
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.BackgroundColor3 = Color3.fromRGB(70, 85, 130)
+Title.Size = UDim2.new(1, -50, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1
 Title.Text = "VIOLENCE DISTRICT"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextColor3 = Color3.fromRGB(200, 215, 255)
 Title.TextScaled = true
 Title.Font = Enum.Font.SourceSansBold
-Title.Parent = MainFrame
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
 
--- Tab Buttons
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -40, 0, 10)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextScaled = true
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Parent = Header
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.Parent = CloseBtn
+
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    Shadow.Visible = false
+end)
+
+-- Tab System
 local TabFrame = Instance.new("Frame")
-TabFrame.Size = UDim2.new(1, 0, 0, 40)
-TabFrame.Position = UDim2.new(0, 0, 0, 40)
-TabFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+TabFrame.Size = UDim2.new(1, 0, 0, 45)
+TabFrame.Position = UDim2.new(0, 0, 0, 50)
+TabFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+TabFrame.BorderSizePixel = 0
 TabFrame.Parent = MainFrame
 
-local Tabs = {"ESP", "Player", "Movement", "Misc"}
+local TabIcons = {
+    ["ESP"] = "👁",
+    ["PLAYER"] = "💪",
+    ["AUTO"] = "⚡",
+    ["KILLER"] = "🔪",
+    ["VISUAL"] = "🎨",
+    ["MISC"] = "⚙"
+}
+
+local Tabs = {"ESP", "PLAYER", "AUTO", "KILLER", "VISUAL", "MISC"}
 local TabButtons = {}
 local CurrentTab = "ESP"
 
--- Content Frame
+-- Content Area
 local ContentFrame = Instance.new("ScrollingFrame")
-ContentFrame.Size = UDim2.new(1, -20, 1, -100)
-ContentFrame.Position = UDim2.new(0, 10, 0, 90)
-ContentFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+ContentFrame.Size = UDim2.new(1, -20, 1, -115)
+ContentFrame.Position = UDim2.new(0, 10, 0, 105)
+ContentFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+ContentFrame.BackgroundTransparency = 1
 ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-ContentFrame.ScrollBarThickness = 5
+ContentFrame.ScrollBarThickness = 4
+ContentFrame.ScrollBarImageColor3 = Color3.fromRGB(70, 85, 130)
+ContentFrame.BorderSizePixel = 0
 ContentFrame.Parent = MainFrame
 
 -- Create Tab Buttons
 for i, tabName in ipairs(Tabs) do
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.25, -2, 1, 0)
-    btn.Position = UDim2.new((i-1) * 0.25, 1, 0, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
-    btn.Text = tabName
-    btn.TextColor3 = Color3.fromRGB(200, 200, 255)
+    btn.Size = UDim2.new(1/6, -2, 1, -4)
+    btn.Position = UDim2.new((i-1) * (1/6), 2, 0, 2)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 38)
+    btn.Text = TabIcons[tabName] or tabName
+    btn.TextColor3 = Color3.fromRGB(150, 150, 200)
     btn.TextScaled = true
     btn.Font = Enum.Font.SourceSansBold
+    btn.BorderSizePixel = 0
     btn.Parent = TabFrame
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.Parent = btn
     
     btn.MouseButton1Click:Connect(function()
         CurrentTab = tabName
         UpdateContent()
         
-        -- Update button colors
         for _, b in ipairs(TabButtons) do
-            b.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+            b.BackgroundColor3 = Color3.fromRGB(25, 25, 38)
+            b.TextColor3 = Color3.fromRGB(150, 150, 200)
         end
         btn.BackgroundColor3 = Color3.fromRGB(70, 85, 130)
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     end)
     
     table.insert(TabButtons, btn)
 end
 
--- Toggle Button (Floating)
+-- Floating Toggle Button
 local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
-ToggleBtn.Position = UDim2.new(0, 20, 0, 100)
+ToggleBtn.Size = UDim2.new(0, 55, 0, 55)
+ToggleBtn.Position = UDim2.new(0, 15, 0, 150)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(70, 85, 130)
 ToggleBtn.Text = "⚡"
 ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -103,24 +176,48 @@ ToggleBtn.TextScaled = true
 ToggleBtn.Font = Enum.Font.SourceSansBold
 ToggleBtn.Active = true
 ToggleBtn.Draggable = true
+ToggleBtn.BorderSizePixel = 0
 ToggleBtn.Parent = ScreenGui
 
--- UICorner for toggle
 local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(1, 0)
 ToggleCorner.Parent = ToggleBtn
 
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Color = Color3.fromRGB(100, 120, 200)
+ToggleStroke.Thickness = 2
+ToggleStroke.Parent = ToggleBtn
+
+-- Glow effect
+local ToggleGlow = Instance.new("UIStroke")
+ToggleGlow.Color = Color3.fromRGB(45, 75, 145)
+ToggleGlow.Thickness = 8
+ToggleGlow.Transparency = 0.6
+ToggleGlow.Parent = ToggleBtn
+
 -- Toggle GUI
 ToggleBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
+    Shadow.Visible = MainFrame.Visible
 end)
 
--- Settings
+-- Keybind
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.LeftControl then
+        MainFrame.Visible = not MainFrame.Visible
+        Shadow.Visible = MainFrame.Visible
+    end
+end)
+
+-- ============== SETTINGS ==============
 local Settings = {
     ESP = {
         Survivor = false,
         Killer = false,
         Generator = false,
+        Pallet = false,
+        Window = false,
         Distance = 100
     },
     Player = {
@@ -133,21 +230,100 @@ local Settings = {
     },
     Auto = {
         Parry = false,
-        SkillCheck = false
+        SkillCheck = false,
+        Wiggle = false
+    },
+    Killer = {
+        KillAll = false,
+        AutoAttack = false,
+        AutoCarry = false,
+        KillRange = 500
+    },
+    Visual = {
+        FOV = false,
+        FOVValue = 70,
+        Zoom = false,
+        ZoomValue = 100
     }
 }
 
--- ESP System
+-- ============== GOD MODE (WORKING) ==============
+local GodModeConnection = nil
+
+local function ToggleGodMode(state)
+    Settings.Player.GodMode = state
+    
+    if GodModeConnection then
+        GodModeConnection:Disconnect()
+        GodModeConnection = nil
+    end
+    
+    if state then
+        GodModeConnection = RunService.Heartbeat:Connect(function()
+            local char = LocalPlayer.Character
+            if not char then return end
+            
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if not hum then return end
+            
+            -- Keep health at max
+            if hum.Health < hum.MaxHealth then
+                hum.Health = hum.MaxHealth
+            end
+            
+            -- Prevent downed state
+            if hum:GetState() == Enum.HumanoidStateType.Dead or 
+               hum:GetState() == Enum.HumanoidStateType.FallingDown or
+               hum:GetState() == Enum.HumanoidStateType.Ragdoll then
+                
+                pcall(function()
+                    hum:ChangeState(Enum.HumanoidStateType.Running)
+                end)
+            end
+            
+            -- Remove debuffs
+            local attributes = char:GetAttributes()
+            if attributes then
+                for key, _ in pairs(attributes) do
+                    if key:lower():find("down") or key:lower():find("stun") or key:lower():find("slow") then
+                        pcall(function()
+                            char:SetAttribute(key, nil)
+                        end)
+                    end
+                end
+            end
+        end)
+    end
+end
+
+-- Auto apply god mode on respawn
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(1)
+    if Settings.Player.GodMode then
+        ToggleGodMode(true)
+    end
+end)
+
+-- ============== ESP SYSTEM ==============
 local ESPObjects = {}
 
+local function ClearESP()
+    for obj, highlight in pairs(ESPObjects) do
+        pcall(function()
+            highlight:Destroy()
+        end)
+    end
+    ESPObjects = {}
+end
+
 local function CreateESP(obj, color)
-    if ESPObjects[obj] then return end
+    if not obj or ESPObjects[obj] then return end
     
     local highlight = Instance.new("Highlight")
     highlight.FillColor = color
     highlight.OutlineColor = color
-    highlight.FillTransparency = 0.7
-    highlight.OutlineTransparency = 0.3
+    highlight.FillTransparency = 0.6
+    highlight.OutlineTransparency = 0.2
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     highlight.Parent = obj
     
@@ -164,17 +340,16 @@ local function CreateESP(obj, color)
 end
 
 local function UpdateESP()
-    while task.wait(0.5) do
+    while task.wait(0.3) do
         if not Settings.ESP.Survivor and not Settings.ESP.Killer and not Settings.ESP.Generator then
-            -- Clear all ESP
-            for obj, highlight in pairs(ESPObjects) do
-                highlight:Destroy()
-            end
-            ESPObjects = {}
+            ClearESP()
             continue
         end
         
-        -- ESP for players
+        local myChar = LocalPlayer.Character
+        local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        
+        -- Player ESP
         for _, player in pairs(Players:GetPlayers()) do
             if player == LocalPlayer then continue end
             if not player.Character then continue end
@@ -182,36 +357,39 @@ local function UpdateESP()
             local root = player.Character:FindFirstChild("HumanoidRootPart")
             if not root then continue end
             
-            -- Check distance
-            local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            -- Distance check
             if myRoot then
                 local dist = (root.Position - myRoot.Position).Magnitude
                 if dist > Settings.ESP.Distance then continue end
             end
             
-            -- Determine if survivor or killer (simple check)
+            -- Determine if killer (check for knife/weapon)
             local isKiller = false
-            -- Check for weapon/tool
             for _, child in pairs(player.Character:GetChildren()) do
-                if child:IsA("Tool") or child.Name:lower():find("knife") or child.Name:lower():find("weapon") then
+                if child:IsA("Tool") or child.Name:lower():find("knife") or child.Name:lower():find("blade") then
                     isKiller = true
                     break
                 end
             end
             
             if isKiller and Settings.ESP.Killer then
-                CreateESP(player.Character, Color3.fromRGB(255, 50, 50))
+                CreateESP(player.Character, Color3.fromRGB(255, 60, 60))
             elseif not isKiller and Settings.ESP.Survivor then
-                CreateESP(player.Character, Color3.fromRGB(50, 255, 100))
+                CreateESP(player.Character, Color3.fromRGB(60, 255, 120))
             end
         end
         
-        -- ESP for generators
+        -- Generator ESP
         if Settings.ESP.Generator then
             for _, obj in pairs(Workspace:GetDescendants()) do
                 if obj.Name:lower():find("generator") or obj.Name:lower():find("gen") then
                     if obj:IsA("BasePart") or obj:IsA("Model") then
-                        CreateESP(obj, Color3.fromRGB(255, 170, 0))
+                        if myRoot then
+                            local dist = (obj.Position - myRoot.Position).Magnitude
+                            if dist <= Settings.ESP.Distance then
+                                CreateESP(obj, Color3.fromRGB(255, 170, 0))
+                            end
+                        end
                     end
                 end
             end
@@ -219,7 +397,7 @@ local function UpdateESP()
     end
 end
 
--- Player Mods
+-- ============== PLAYER MODS ==============
 local function ApplyWalkspeed()
     while task.wait(0.1) do
         if not Settings.Player.Walkspeed then task.wait(1) continue end
@@ -263,301 +441,190 @@ local function ApplyNoClip()
     end
 end
 
-local function ApplyGodMode()
-    while task.wait(0.1) do
-        if not Settings.Player.GodMode then task.wait(1) continue end
-        
-        local char = LocalPlayer.Character
-        if not char then continue end
-        
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum and hum.Health > 0 then
-            hum.Health = hum.MaxHealth
-        end
-    end
-end
-
--- Auto Parry
+-- ============== AUTO FEATURES ==============
 local function AutoParry()
     while task.wait(0.05) do
         if not Settings.Auto.Parry then task.wait(1) continue end
         
-        -- Check for incoming attacks (simplified)
         local char = LocalPlayer.Character
         if not char then continue end
         
         local hum = char:FindFirstChildOfClass("Humanoid")
         if not hum then continue end
         
-        -- Check if being attacked (health dropping)
-        if hum.Health < hum.MaxHealth * 0.9 then
-            -- Try to parry (press Q or parry key)
-            pcall(function()
-                -- Find parry remote
-                local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-                if remotes then
-                    local parryRemote = remotes:FindFirstChild("Parry") or 
-                                       remotes:FindFirstChild("Block") or
-                                       remotes:FindFirstChild("Defend")
-                    if parryRemote then
-                        parryRemote:FireServer()
+        -- Check if health dropped (being attacked)
+        if hum.Health < hum.MaxHealth * 0.95 then
+            -- Try to find and fire parry remote
+            local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+            if remotes then
+                for _, folder in pairs(remotes:GetChildren()) do
+                    for _, remote in pairs(folder:GetChildren()) do
+                        local name = remote.Name:lower()
+                        if name:find("parry") or name:find("block") or name:find("defend") then
+                            pcall(function()
+                                remote:FireServer()
+                            end)
+                        end
                     end
-                end
-            end)
-        end
-    end
-end
-
--- Auto Skill Check
-local function AutoSkillCheck()
-    while task.wait(0.1) do
-        if not Settings.Auto.SkillCheck then task.wait(1) continue end
-        
-        -- Find skill check remote
-        local genRemote = ReplicatedStorage:FindFirstChild("Remotes")
-        if genRemote then
-            genRemote = genRemote:FindFirstChild("Generator")
-            if genRemote then
-                local skillCheck = genRemote:FindFirstChild("SkillCheckResultEvent") or
-                                  genRemote:FindFirstChild("SkillCheck") or
-                                  genRemote:FindFirstChild("Complete")
-                if skillCheck then
-                    pcall(function()
-                        skillCheck:FireServer(true) -- Perfect skill check
-                    end)
                 end
             end
         end
     end
 end
 
--- Create Toggle in Content
-local function CreateToggle(parent, text, setting, callback)
+local function AutoSkillCheck()
+    while task.wait(0.1) do
+        if not Settings.Auto.SkillCheck then task.wait(1) continue end
+        
+        local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+        if not remotes then continue end
+        
+        local genRemote = remotes:FindFirstChild("Generator")
+        if not genRemote then continue end
+        
+        for _, remote in pairs(genRemote:GetChildren()) do
+            local name = remote.Name:lower()
+            if name:find("skillcheck") or name:find("complete") or name:find("result") then
+                pcall(function()
+                    remote:FireServer(true) -- Perfect skill check
+                end)
+            end
+        end
+    end
+end
+
+-- ============== KILLER MODE ==============
+local function KillAllMode()
+    while task.wait(0.5) do
+        if not Settings.Killer.KillAll then task.wait(2) continue end
+        
+        local char = LocalPlayer.Character
+        if not char then continue end
+        
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if not root then continue end
+        
+        for _, player in pairs(Players:GetPlayers()) do
+            if player == LocalPlayer then continue end
+            if not player.Character then continue end
+            
+            local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
+            if not targetRoot then continue end
+            
+            local dist = (targetRoot.Position - root.Position).Magnitude
+            if dist > Settings.Killer.KillRange then continue end
+            
+            -- Teleport to target
+            root.CFrame = CFrame.new(targetRoot.Position + Vector3.new(0, 3, 0))
+            
+            -- Try to attack
+            local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+            if remotes then
+                local attackRemote = remotes:FindFirstChild("Attacks")
+                if attackRemote then
+                    for _, remote in pairs(attackRemote:GetChildren()) do
+                        pcall(function()
+                            remote:FireServer()
+                        end)
+                    end
+                end
+            end
+            
+            task.wait(0.3)
+        end
+    end
+end
+
+-- ============== VISUAL MODS ==============
+local function ApplyFOV()
+    while task.wait(0.1) do
+        if Settings.Visual.FOV then
+            Camera.FieldOfView = Settings.Visual.FOVValue
+        end
+    end
+end
+
+local function ApplyZoom()
+    while task.wait(0.1) do
+        if Settings.Visual.Zoom then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position + Camera.CFrame.LookVector * Settings.Visual.ZoomValue)
+        end
+    end
+end
+
+-- ============== UI COMPONENTS ==============
+function CreateSection(parent, text)
+    local section = Instance.new("TextLabel")
+    section.Size = UDim2.new(1, 0, 0, 30)
+    section.BackgroundColor3 = Color3.fromRGB(25, 25, 38)
+    section.Text = "─── " .. text .. " ───"
+    section.TextColor3 = Color3.fromRGB(100, 120, 200)
+    section.TextScaled = true
+    section.Font = Enum.Font.SourceSansBold
+    section.BorderSizePixel = 0
+    section.Parent = parent
+    
+    local sectionCorner = Instance.new("UICorner")
+    sectionCorner.CornerRadius = UDim.new(0, 6)
+    sectionCorner.Parent = section
+    
+    return section
+end
+
+function CreateToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -10, 0, 35)
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    frame.Size = UDim2.new(1, 0, 0, 40)
+    frame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+    frame.BorderSizePixel = 0
     frame.Parent = parent
     
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 5)
-    UICorner.Parent = frame
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 8)
+    frameCorner.Parent = frame
     
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.Size = UDim2.new(0.7, -10, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
-    label.TextColor3 = Color3.fromRGB(200, 200, 255)
+    label.TextColor3 = Color3.fromRGB(200, 215, 255)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.TextScaled = true
     label.Font = Enum.Font.SourceSans
     label.Parent = frame
     
     local toggle = Instance.new("TextButton")
-    toggle.Size = UDim2.new(0, 30, 0, 30)
-    toggle.Position = UDim2.new(1, -35, 0, 2.5)
-    toggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    toggle.Size = UDim2.new(0, 35, 0, 35)
+    toggle.Position = UDim2.new(1, -45, 0, 2.5)
+    toggle.BackgroundColor3 = default and Color3.fromRGB(70, 200, 100) or Color3.fromRGB(60, 60, 80)
     toggle.Text = ""
+    toggle.BorderSizePixel = 0
     toggle.Parent = frame
     
     local toggleCorner = Instance.new("UICorner")
     toggleCorner.CornerRadius = UDim.new(1, 0)
     toggleCorner.Parent = toggle
     
-    local state = false
+    local state = default or false
     
     toggle.MouseButton1Click:Connect(function()
         state = not state
-        toggle.BackgroundColor3 = state and Color3.fromRGB(70, 200, 100) or Color3.fromRGB(100, 100, 100)
-        setting = state
+        toggle.BackgroundColor3 = state and Color3.fromRGB(70, 200, 100) or Color3.fromRGB(60, 60, 80)
         if callback then callback(state) end
     end)
     
-    return frame
+    return frame, toggle, function() return state end
 end
 
--- Create Slider
-local function CreateSlider(parent, text, min, max, default, callback)
+function CreateSlider(parent, text, min, max, default, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -10, 0, 50)
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    frame.Size = UDim2.new(1, 0, 0, 55)
+    frame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+    frame.BorderSizePixel = 0
     frame.Parent = parent
     
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 5)
-    UICorner.Parent = frame
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 8)
+    frameCorner.Parent = frame
     
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -10, 0, 20)
-    label.Position = UDim2.new(0, 5, 0, 2)
-    label.BackgroundTransparency = 1
-    label.Text = text .. ": " .. default
-    label.TextColor3 = Color3.fromRGB(200, 200, 255)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.TextScaled = true
-    label.Font = Enum.Font.SourceSans
-    label.Parent = frame
-    
-    local slider = Instance.new("TextBox")
-    slider.Size = UDim2.new(1, -20, 0, 25)
-    slider.Position = UDim2.new(0, 10, 0, 22)
-    slider.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
-    slider.Text = tostring(default)
-    slider.TextColor3 = Color3.fromRGB(255, 255, 255)
-    slider.TextScaled = true
-    slider.Font = Enum.Font.SourceSans
-    slider.ClearTextOnFocus = false
-    slider.Parent = frame
-    
-    local sliderCorner = Instance.new("UICorner")
-    sliderCorner.CornerRadius = UDim.new(0, 5)
-    sliderCorner.Parent = slider
-    
-    slider.FocusLost:Connect(function()
-        local value = tonumber(slider.Text)
-        if value then
-            value = math.clamp(value, min, max)
-            slider.Text = tostring(value)
-            label.Text = text .. ": " .. value
-            if callback then callback(value) end
-        end
-    end)
-    
-    return frame
-end
-
--- Update Content based on tab
-function UpdateContent()
-    -- Clear content
-    for _, child in pairs(ContentFrame:GetChildren()) do
-        child:Destroy()
-    end
-    
-    local yOffset = 5
-    
-    if CurrentTab == "ESP" then
-        local title = Instance.new("TextLabel")
-        title.Size = UDim2.new(1, 0, 0, 25)
-        title.BackgroundTransparency = 1
-        title.Text = "ESP Settings"
-        title.TextColor3 = Color3.fromRGB(70, 85, 130)
-        title.TextScaled = true
-        title.Font = Enum.Font.SourceSansBold
-        title.Parent = ContentFrame
-        yOffset = yOffset + 30
-        
-        CreateToggle(ContentFrame, "Survivor ESP", Settings.ESP.Survivor, function(state)
-            Settings.ESP.Survivor = state
-        end)
-        
-        CreateToggle(ContentFrame, "Killer ESP", Settings.ESP.Killer, function(state)
-            Settings.ESP.Killer = state
-        end)
-        
-        CreateToggle(ContentFrame, "Generator ESP", Settings.ESP.Generator, function(state)
-            Settings.ESP.Generator = state
-        end)
-        
-        CreateSlider(ContentFrame, "ESP Distance", 10, 500, Settings.ESP.Distance, function(value)
-            Settings.ESP.Distance = value
-        end)
-        
-    elseif CurrentTab == "Player" then
-        local title = Instance.new("TextLabel")
-        title.Size = UDim2.new(1, 0, 0, 25)
-        title.BackgroundTransparency = 1
-        title.Text = "Player Mods"
-        title.TextColor3 = Color3.fromRGB(70, 85, 130)
-        title.TextScaled = true
-        title.Font = Enum.Font.SourceSansBold
-        title.Parent = ContentFrame
-        
-        CreateToggle(ContentFrame, "Walkspeed", Settings.Player.Walkspeed, function(state)
-            Settings.Player.Walkspeed = state
-        end)
-        
-        CreateSlider(ContentFrame, "Walkspeed Value", 16, 100, Settings.Player.WalkspeedValue, function(value)
-            Settings.Player.WalkspeedValue = value
-        end)
-        
-        CreateToggle(ContentFrame, "Jump Power", Settings.Player.JumpPower, function(state)
-            Settings.Player.JumpPower = state
-        end)
-        
-        CreateSlider(ContentFrame, "Jump Power Value", 50, 200, Settings.Player.JumpPowerValue, function(value)
-            Settings.Player.JumpPowerValue = value
-        end)
-        
-        CreateToggle(ContentFrame, "NoClip", Settings.Player.NoClip, function(state)
-            Settings.Player.NoClip = state
-        end)
-        
-        CreateToggle(ContentFrame, "God Mode", Settings.Player.GodMode, function(state)
-            Settings.Player.GodMode = state
-        end)
-        
-    elseif CurrentTab == "Movement" then
-        local title = Instance.new("TextLabel")
-        title.Size = UDim2.new(1, 0, 0, 25)
-        title.BackgroundTransparency = 1
-        title.Text = "Auto Features"
-        title.TextColor3 = Color3.fromRGB(70, 85, 130)
-        title.TextScaled = true
-        title.Font = Enum.Font.SourceSansBold
-        title.Parent = ContentFrame
-        
-        CreateToggle(ContentFrame, "Auto Parry", Settings.Auto.Parry, function(state)
-            Settings.Auto.Parry = state
-        end)
-        
-        CreateToggle(ContentFrame, "Auto Skill Check", Settings.Auto.SkillCheck, function(state)
-            Settings.Auto.SkillCheck = state
-        end)
-        
-    elseif CurrentTab == "Misc" then
-        local title = Instance.new("TextLabel")
-        title.Size = UDim2.new(1, 0, 0, 25)
-        title.BackgroundTransparency = 1
-        title.Text = "Miscellaneous"
-        title.TextColor3 = Color3.fromRGB(70, 85, 130)
-        title.TextScaled = true
-        title.Font = Enum.Font.SourceSansBold
-        title.Parent = ContentFrame
-        
-        local info = Instance.new("TextLabel")
-        info.Size = UDim2.new(1, 0, 0, 100)
-        info.Position = UDim2.new(0, 0, 0, 30)
-        info.BackgroundTransparency = 1
-        info.Text = "Violence District Script\nOptimized for Delta Android\n\nPress the ⚡ button to toggle menu"
-        info.TextColor3 = Color3.fromRGB(150, 150, 200)
-        info.TextScaled = true
-        info.Font = Enum.Font.SourceSans
-        info.Parent = ContentFrame
-    end
-    
-    -- Update canvas size
-    ContentFrame.CanvasSize = UDim2.new(0, 0, 0, yOffset + #ContentFrame:GetChildren() * 40)
-end
-
--- Initialize
-UpdateContent()
-
--- Start threads
-spawn(UpdateESP)
-spawn(ApplyWalkspeed)
-spawn(ApplyJumpPower)
-spawn(ApplyNoClip)
-spawn(ApplyGodMode)
-spawn(AutoParry)
-spawn(AutoSkillCheck)
-
--- Keybind (LeftControl to toggle)
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    if input.KeyCode == Enum.KeyCode.LeftControl then
-        MainFrame.Visible = not MainFrame.Visible
-    end
-end)
-
-print("✅ Violence District Script Loaded!")
-print("📱 Press ⚡ button or LeftControl to open menu")
+    l
