@@ -1,42 +1,37 @@
--- Simple Hub Menu v4 - ALL FIXED
--- Delta Executor Mobile - 100% Working
+-- Simple Hub - Speed Only
+-- Delta Executor Mobile
 
 task.wait(2)
 
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RS = game:GetService("RunService")
-local WS = game:GetService("Workspace")
-local Cam = WS.CurrentCamera
-local Light = game:GetService("Lighting")
 local Tween = game:GetService("TweenService")
+local Cam = workspace.CurrentCamera
 
 local plr = Players.LocalPlayer
 if not plr then plr = Players.PlayerAdded:Wait() end
 
 -- ============== SETTINGS ==============
 _G = _G or {}
-_G.S = {
-    Fly = false, FlySpeed = 50,
-    Speed = false, WalkSpeed = 16,
-    Noclip = false,
-    Fling = false, FlingPower = 100,
-    ESP = false, Line = false, Box = false, NameTag = false, Highlight = false, Studs = false,
-    Invisible = false,
-    FPS = false
-}
-_G.C = {}
-_G.E = {}
+_G.Hub = _G.Hub or {}
+_G.Hub.Speed = false
+_G.Hub.SpeedVal = 16
 
 -- ============== GUI ==============
 local sg = Instance.new("ScreenGui")
 sg.Name = "SimpleHub"
 sg.ResetOnSpawn = false
 sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-pcall(function() sg.Parent = plr:WaitForChild("PlayerGui") end)
-if not sg.Parent then pcall(function() sg.Parent = game:GetService("CoreGui") end) end
 
--- ============== ICON (SMOOTH DRAG) ==============
+local success = pcall(function()
+    sg.Parent = plr:WaitForChild("PlayerGui")
+end)
+if not success then
+    pcall(function() sg.Parent = game:GetService("CoreGui") end)
+end
+
+-- ============== ICON ==============
 local icon = Instance.new("Frame")
 icon.Name = "Icon"
 icon.Size = UDim2.new(0, 50, 0, 50)
@@ -45,52 +40,54 @@ icon.BackgroundColor3 = Color3.fromRGB(26, 26, 40)
 icon.BackgroundTransparency = 0.1
 icon.BorderSizePixel = 0
 icon.Active = true
-local icc = Instance.new("UICorner")
-icc.CornerRadius = UDim.new(0, 14)
-icc.Parent = icon
 
-local idot = Instance.new("Frame")
-idot.Size = UDim2.new(0.6, 0, 0.6, 0)
-idot.Position = UDim2.new(0.2, 0, 0.2, 0)
-idot.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
-idot.BorderSizePixel = 0
-local idc2 = Instance.new("UICorner")
-idc2.CornerRadius = UDim.new(1, 0)
-idc2.Parent = idot
-idot.Parent = icon
+local iconCorner = Instance.new("UICorner")
+iconCorner.CornerRadius = UDim.new(0, 14)
+iconCorner.Parent = icon
 
-local itxt = Instance.new("TextLabel")
-itxt.Size = UDim2.new(1, 0, 1, 0)
-itxt.BackgroundTransparency = 1
-itxt.Text = "H"
-itxt.TextColor3 = Color3.new(1, 1, 1)
-itxt.TextSize = 22
-itxt.Font = Enum.Font.GothamBold
-itxt.TextScaled = true
-itxt.Parent = idot
+local iconInner = Instance.new("Frame")
+iconInner.Size = UDim2.new(0.6, 0, 0.6, 0)
+iconInner.Position = UDim2.new(0.2, 0, 0.2, 0)
+iconInner.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
+iconInner.BorderSizePixel = 0
+local innerCorner = Instance.new("UICorner")
+innerCorner.CornerRadius = UDim.new(1, 0)
+innerCorner.Parent = iconInner
+iconInner.Parent = icon
+
+local iconText = Instance.new("TextLabel")
+iconText.Size = UDim2.new(1, 0, 1, 0)
+iconText.BackgroundTransparency = 1
+iconText.Text = "H"
+iconText.TextColor3 = Color3.new(1, 1, 1)
+iconText.TextSize = 22
+iconText.Font = Enum.Font.GothamBold
+iconText.TextScaled = true
+iconText.Parent = iconInner
 
 -- Shadow
-local ish = Instance.new("ImageLabel")
-ish.Size = UDim2.new(1, 10, 1, 10)
-ish.Position = UDim2.new(0, -5, 0, -5)
-ish.BackgroundTransparency = 1
-ish.Image = "rbxassetid://6014261993"
-ish.ImageColor3 = Color3.new(0, 0, 0)
-ish.ImageTransparency = 0.6
-ish.ScaleType = Enum.ScaleType.Slice
-ish.SliceCenter = Rect.new(100, 100, 100, 100)
-ish.Parent = icon
+local shadow = Instance.new("ImageLabel")
+shadow.Size = UDim2.new(1, 10, 1, 10)
+shadow.Position = UDim2.new(0, -5, 0, -5)
+shadow.BackgroundTransparency = 1
+shadow.Image = "rbxassetid://6014261993"
+shadow.ImageColor3 = Color3.new(0, 0, 0)
+shadow.ImageTransparency = 0.6
+shadow.ScaleType = Enum.ScaleType.Slice
+shadow.SliceCenter = Rect.new(100, 100, 100, 100)
+shadow.Parent = icon
+
 icon.Parent = sg
 
--- SMOOTH DRAG FIX
+-- ===== SMOOTH ICON DRAG =====
 local isDragging = false
-local dragOffset = Vector2.new()
+local dragStart, iconStart
 
 icon.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch then
         isDragging = true
-        local iconPos = icon.AbsolutePosition
-        dragOffset = Vector2.new(input.Position.X - iconPos.X, input.Position.Y - iconPos.Y)
+        dragStart = input.Position
+        iconStart = icon.Position
     end
 end)
 
@@ -102,9 +99,10 @@ end)
 
 UIS.InputChanged:Connect(function(input)
     if isDragging and input.UserInputType == Enum.UserInputType.Touch then
+        local delta = input.Position - dragStart
         local viewSize = Cam.ViewportSize
-        local newX = math.clamp(input.Position.X - dragOffset.X, 0, viewSize.X - icon.AbsoluteSize.X)
-        local newY = math.clamp(input.Position.Y - dragOffset.Y, 0, viewSize.Y - icon.AbsoluteSize.Y)
+        local newX = math.clamp(iconStart.X.Offset + delta.X, 0, viewSize.X - 50)
+        local newY = math.clamp(iconStart.Y.Offset + delta.Y, 0, viewSize.Y - 50)
         icon.Position = UDim2.new(0, newX, 0, newY)
     end
 end)
@@ -112,37 +110,39 @@ end)
 -- ============== MAIN MENU ==============
 local menu = Instance.new("Frame")
 menu.Name = "Menu"
-menu.Size = UDim2.new(0, 370, 0, 320)
-menu.Position = UDim2.new(0.5, -185, 0.5, -160)
+menu.Size = UDim2.new(0, 260, 0, 200)
+menu.Position = UDim2.new(0.5, -130, 0.5, -100)
 menu.BackgroundColor3 = Color3.fromRGB(14, 14, 24)
 menu.BackgroundTransparency = 0.05
 menu.BorderSizePixel = 0
 menu.Visible = false
 menu.Active = true
-local mc2 = Instance.new("UICorner")
-mc2.CornerRadius = UDim.new(0, 12)
-mc2.Parent = menu
 
-local msh2 = Instance.new("ImageLabel")
-msh2.Size = UDim2.new(1, 12, 1, 12)
-msh2.Position = UDim2.new(0, -6, 0, -6)
-msh2.BackgroundTransparency = 1
-msh2.Image = "rbxassetid://6014261993"
-msh2.ImageColor3 = Color3.new(0, 0, 0)
-msh2.ImageTransparency = 0.7
-msh2.ScaleType = Enum.ScaleType.Slice
-msh2.SliceCenter = Rect.new(100, 100, 100, 100)
-msh2.Parent = menu
+local menuCorner = Instance.new("UICorner")
+menuCorner.CornerRadius = UDim.new(0, 12)
+menuCorner.Parent = menu
+
+-- Menu Shadow
+local menuShadow = Instance.new("ImageLabel")
+menuShadow.Size = UDim2.new(1, 12, 1, 12)
+menuShadow.Position = UDim2.new(0, -6, 0, -6)
+menuShadow.BackgroundTransparency = 1
+menuShadow.Image = "rbxassetid://6014261993"
+menuShadow.ImageColor3 = Color3.new(0, 0, 0)
+menuShadow.ImageTransparency = 0.7
+menuShadow.ScaleType = Enum.ScaleType.Slice
+menuShadow.SliceCenter = Rect.new(100, 100, 100, 100)
+menuShadow.Parent = menu
 
 -- Menu drag
 local mDragging = false
-local mDragOffset = Vector2.new()
+local mDragStart, mIconStart
 
 menu.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch then
         mDragging = true
-        local menuPos = menu.AbsolutePosition
-        mDragOffset = Vector2.new(input.Position.X - menuPos.X, input.Position.Y - menuPos.Y)
+        mDragStart = input.Position
+        mIconStart = menu.Position
     end
 end)
 
@@ -154,32 +154,38 @@ end)
 
 UIS.InputChanged:Connect(function(input)
     if mDragging and input.UserInputType == Enum.UserInputType.Touch then
-        local viewSize = Cam.ViewportSize
-        menu.Position = UDim2.new(0, math.clamp(input.Position.X - mDragOffset.X, 0, viewSize.X - menu.AbsoluteSize.X), 0, math.clamp(input.Position.Y - mDragOffset.Y, 0, viewSize.Y - menu.AbsoluteSize.Y))
+        local delta = input.Position - mDragStart
+        menu.Position = UDim2.new(
+            mIconStart.X.Scale,
+            mIconStart.X.Offset + delta.X,
+            mIconStart.Y.Scale,
+            mIconStart.Y.Offset + delta.Y
+        )
     end
 end)
+
 menu.Parent = sg
 
 -- ============== HEADER ==============
-local hdr = Instance.new("Frame")
-hdr.Size = UDim2.new(1, 0, 0, 38)
-hdr.BackgroundColor3 = Color3.fromRGB(20, 20, 34)
-hdr.BorderSizePixel = 0
-local hc3 = Instance.new("UICorner")
-hc3.CornerRadius = UDim.new(0, 12)
-hc3.Parent = hdr
-hdr.Parent = menu
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 38)
+header.BackgroundColor3 = Color3.fromRGB(20, 20, 34)
+header.BorderSizePixel = 0
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 12)
+headerCorner.Parent = header
+header.Parent = menu
 
-local ttl = Instance.new("TextLabel")
-ttl.Size = UDim2.new(0.5, 0, 1, 0)
-ttl.Position = UDim2.new(0, 12, 0, 0)
-ttl.BackgroundTransparency = 1
-ttl.Text = "Simple Hub"
-ttl.TextColor3 = Color3.new(1, 1, 1)
-ttl.TextSize = 15
-ttl.Font = Enum.Font.GothamBold
-ttl.TextXAlignment = Enum.TextXAlignment.Left
-ttl.Parent = hdr
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(0.5, 0, 1, 0)
+title.Position = UDim2.new(0, 12, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "Simple Hub"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 15
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
 
 -- Hide button (-)
 local hideBtn = Instance.new("TextButton")
@@ -192,10 +198,10 @@ hideBtn.Text = "-"
 hideBtn.TextColor3 = Color3.new(1, 1, 1)
 hideBtn.TextSize = 16
 hideBtn.Font = Enum.Font.GothamBold
-local hc4 = Instance.new("UICorner")
-hc4.CornerRadius = UDim.new(1, 0)
-hc4.Parent = hideBtn
-hideBtn.Parent = hdr
+local hideCorner = Instance.new("UICorner")
+hideCorner.CornerRadius = UDim.new(1, 0)
+hideCorner.Parent = hideBtn
+hideBtn.Parent = header
 
 -- Close button (X)
 local closeBtn = Instance.new("TextButton")
@@ -208,434 +214,305 @@ closeBtn.Text = "X"
 closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.TextSize = 12
 closeBtn.Font = Enum.Font.GothamBold
-local cc2 = Instance.new("UICorner")
-cc2.CornerRadius = UDim.new(1, 0)
-cc2.Parent = closeBtn
-closeBtn.Parent = hdr
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(1, 0)
+closeCorner.Parent = closeBtn
+closeBtn.Parent = header
 
--- ============== LANDSCAPE LAYOUT ==============
--- LEFT PANEL
-local leftP = Instance.new("ScrollingFrame")
-leftP.Size = UDim2.new(0.38, -2, 1, -46)
-leftP.Position = UDim2.new(0, 0, 0, 46)
-leftP.BackgroundTransparency = 1
-leftP.BorderSizePixel = 0
-leftP.ScrollBarThickness = 0
-leftP.AutomaticCanvasSize = Enum.AutomaticSize.Y
-leftP.CanvasSize = UDim2.new(0, 0, 0, 0)
-leftP.Parent = menu
+-- ============== CONTENT ==============
+local content = Instance.new("Frame")
+content.Size = UDim2.new(1, 0, 1, -46)
+content.Position = UDim2.new(0, 0, 0, 46)
+content.BackgroundTransparency = 1
+content.BorderSizePixel = 0
+content.Parent = menu
 
-local ll2 = Instance.new("UIListLayout")
-ll2.Padding = UDim.new(0, 3)
-ll2.HorizontalAlignment = Enum.HorizontalAlignment.Center
-ll2.SortOrder = Enum.SortOrder.LayoutOrder
-ll2.Parent = leftP
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 8)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.VerticalAlignment = Enum.VerticalAlignment.Center
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = content
 
--- DIVIDER
-local div2 = Instance.new("Frame")
-div2.Size = UDim2.new(0, 1, 1, -46)
-div2.Position = UDim2.new(0.38, 0, 0, 46)
-div2.BackgroundColor3 = Color3.fromRGB(45, 45, 58)
-div2.BorderSizePixel = 0
-div2.Parent = menu
+-- ============== SPEED TOGGLE ==============
+local toggleFrame = Instance.new("Frame")
+toggleFrame.Size = UDim2.new(0.9, 0, 0, 45)
+toggleFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 38)
+toggleFrame.BackgroundTransparency = 0.2
+toggleFrame.BorderSizePixel = 0
+local tFrameCorner = Instance.new("UICorner")
+tFrameCorner.CornerRadius = UDim.new(0, 10)
+tFrameCorner.Parent = toggleFrame
 
--- RIGHT PANEL
-local rightP = Instance.new("ScrollingFrame")
-rightP.Size = UDim2.new(0.62, -4, 1, -46)
-rightP.Position = UDim2.new(0.38, 2, 0, 46)
-rightP.BackgroundTransparency = 1
-rightP.BorderSizePixel = 0
-rightP.ScrollBarThickness = 0
-rightP.AutomaticCanvasSize = Enum.AutomaticSize.Y
-rightP.CanvasSize = UDim2.new(0, 0, 0, 0)
-rightP.Parent = menu
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(0.5, 0, 1, 0)
+speedLabel.Position = UDim2.new(0, 12, 0, 0)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Speed"
+speedLabel.TextColor3 = Color3.fromRGB(210, 210, 225)
+speedLabel.TextSize = 16
+speedLabel.Font = Enum.Font.GothamBold
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+speedLabel.Parent = toggleFrame
 
-local rl2 = Instance.new("UIListLayout")
-rl2.Padding = UDim.new(0, 3)
-rl2.HorizontalAlignment = Enum.HorizontalAlignment.Center
-rl2.SortOrder = Enum.SortOrder.LayoutOrder
-rl2.Parent = rightP
+-- Toggle switch
+local toggleSwitch = Instance.new("Frame")
+toggleSwitch.Size = UDim2.new(0, 44, 0, 24)
+toggleSwitch.Position = UDim2.new(1, -52, 0.5, -12)
+toggleSwitch.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+toggleSwitch.BorderSizePixel = 0
+local tsCorner = Instance.new("UICorner")
+tsCorner.CornerRadius = UDim.new(1, 0)
+tsCorner.Parent = toggleSwitch
 
-local rpTitle = Instance.new("TextLabel")
-rpTitle.Size = UDim2.new(0.95, 0, 0, 28)
-rpTitle.BackgroundTransparency = 1
-rpTitle.Text = "Select a feature"
-rpTitle.TextColor3 = Color3.fromRGB(110, 110, 130)
-rpTitle.TextSize = 12
-rpTitle.Font = Enum.Font.Gotham
-rpTitle.TextXAlignment = Enum.TextXAlignment.Center
-rpTitle.Parent = rightP
+local toggleCircle = Instance.new("Frame")
+toggleCircle.Size = UDim2.new(0, 20, 0, 20)
+toggleCircle.Position = UDim2.new(0, 2, 0.5, -10)
+toggleCircle.BackgroundColor3 = Color3.fromRGB(160, 160, 175)
+toggleCircle.BorderSizePixel = 0
+local tcCorner = Instance.new("UICorner")
+tcCorner.CornerRadius = UDim.new(1, 0)
+tcCorner.Parent = toggleCircle
+toggleCircle.Parent = toggleSwitch
 
--- ============== UI COMPONENTS ==============
-local currentFeat = nil
+local toggleHit = Instance.new("TextButton")
+toggleHit.Size = UDim2.new(1.5, 0, 1, 0)
+toggleHit.Position = UDim2.new(-0.25, 0, 0, 0)
+toggleHit.BackgroundTransparency = 1
+toggleHit.Text = ""
+toggleHit.Parent = toggleSwitch
 
-function ClearRight()
-    for _, v in ipairs(rightP:GetChildren()) do
-        if v ~= rpTitle then v:Destroy() end
+toggleHit.MouseButton1Click:Connect(function()
+    _G.Hub.Speed = not _G.Hub.Speed
+    if _G.Hub.Speed then
+        toggleSwitch.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
+        toggleCircle:TweenPosition(UDim2.new(0, 22, 0.5, -10), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.12, true)
+        toggleCircle.BackgroundColor3 = Color3.new(1, 1, 1)
+        StartSpeed()
+    else
+        toggleSwitch.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+        toggleCircle:TweenPosition(UDim2.new(0, 2, 0.5, -10), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.12, true)
+        toggleCircle.BackgroundColor3 = Color3.fromRGB(160, 160, 175)
+        StopSpeed()
     end
-    rpTitle.Text = "Select a feature"
-end
+end)
 
-function FeatBtn(name, iconText, fid)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.95, 0, 0, 40)
-    btn.BackgroundColor3 = Color3.fromRGB(22, 22, 36)
-    btn.BackgroundTransparency = 0.3
-    btn.BorderSizePixel = 0
-    btn.Text = ""
-    local bc = Instance.new("UICorner")
-    bc.CornerRadius = UDim.new(0, 8)
-    bc.Parent = btn
-    
-    local ic = Instance.new("TextLabel")
-    ic.Size = UDim2.new(0, 28, 1, 0)
-    ic.Position = UDim2.new(0, 6, 0, 0)
-    ic.BackgroundTransparency = 1
-    ic.Text = iconText
-    ic.TextColor3 = Color3.fromRGB(70, 130, 255)
-    ic.TextSize = 15
-    ic.Font = Enum.Font.GothamBold
-    ic.Parent = btn
-    
-    local nm = Instance.new("TextLabel")
-    nm.Size = UDim2.new(1, -44, 1, 0)
-    nm.Position = UDim2.new(0, 38, 0, 0)
-    nm.BackgroundTransparency = 1
-    nm.Text = name
-    nm.TextColor3 = Color3.fromRGB(195, 195, 210)
-    nm.TextSize = 13
-    nm.Font = Enum.Font.Gotham
-    nm.TextXAlignment = Enum.TextXAlignment.Left
-    nm.Parent = btn
-    
-    local ar = Instance.new("TextLabel")
-    ar.Size = UDim2.new(0, 16, 1, 0)
-    ar.Position = UDim2.new(1, -18, 0, 0)
-    ar.BackgroundTransparency = 1
-    ar.Text = ">"
-    ar.TextColor3 = Color3.fromRGB(85, 85, 105)
-    ar.TextSize = 13
-    ar.Font = Enum.Font.Gotham
-    ar.Parent = btn
-    
-    btn.MouseButton1Click:Connect(function()
-        currentFeat = fid
-        ShowSettings(fid, name)
-        for _, v in ipairs(leftP:GetChildren()) do
-            if v:IsA("TextButton") then v.BackgroundColor3 = Color3.fromRGB(22, 22, 36) end
-        end
-        btn.BackgroundColor3 = Color3.fromRGB(34, 34, 54)
-    end)
-    btn.Parent = leftP
-end
+toggleFrame.Parent = content
 
-function MakeToggle(name, var)
-    local f = Instance.new("Frame")
-    f.Size = UDim2.new(0.95, 0, 0, 36)
-    f.BackgroundColor3 = Color3.fromRGB(20, 20, 34)
-    f.BackgroundTransparency = 0.3
-    f.BorderSizePixel = 0
-    local fc = Instance.new("UICorner")
-    fc.CornerRadius = UDim.new(0, 7)
-    fc.Parent = f
-    
-    local lb = Instance.new("TextLabel")
-    lb.Size = UDim2.new(0.55, 0, 1, 0)
-    lb.Position = UDim2.new(0, 10, 0, 0)
-    lb.BackgroundTransparency = 1
-    lb.Text = name
-    lb.TextColor3 = Color3.fromRGB(190, 190, 205)
-    lb.TextSize = 12
-    lb.Font = Enum.Font.Gotham
-    lb.TextXAlignment = Enum.TextXAlignment.Left
-    lb.Parent = f
-    
-    local tog = Instance.new("Frame")
-    tog.Size = UDim2.new(0, 36, 0, 20)
-    tog.Position = UDim2.new(1, -42, 0.5, -10)
-    tog.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
-    tog.BorderSizePixel = 0
-    local tc = Instance.new("UICorner")
-    tc.CornerRadius = UDim.new(1, 0)
-    tc.Parent = tog
-    
-    local cir = Instance.new("Frame")
-    cir.Size = UDim2.new(0, 16, 0, 16)
-    cir.Position = UDim2.new(0, 2, 0.5, -8)
-    cir.BackgroundColor3 = Color3.fromRGB(160, 160, 175)
-    cir.BorderSizePixel = 0
-    local cic = Instance.new("UICorner")
-    cic.CornerRadius = UDim.new(1, 0)
-    cic.Parent = cir
-    cir.Parent = tog
-    
-    local hit = Instance.new("TextButton")
-    hit.Size = UDim2.new(1.5, 0, 1, 0)
-    hit.Position = UDim2.new(-0.25, 0, 0, 0)
-    hit.BackgroundTransparency = 1
-    hit.Text = ""
-    hit.Parent = tog
-    
-    -- Set initial state
-    if _G.S[var] then
-        tog.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
-        cir.Position = UDim2.new(0, 18, 0.5, -8)
-        cir.BackgroundColor3 = Color3.new(1, 1, 1)
-    end
-    
-    hit.MouseButton1Click:Connect(function()
-        _G.S[var] = not _G.S[var]
-        local s = _G.S[var]
-        if s then
-            tog.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
-            cir:TweenPosition(UDim2.new(0, 18, 0.5, -8), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.1)
-            cir.BackgroundColor3 = Color3.new(1, 1, 1)
-        else
-            tog.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
-            cir:TweenPosition(UDim2.new(0, 2, 0.5, -8), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.1)
-            cir.BackgroundColor3 = Color3.fromRGB(160, 160, 175)
-        end
-        RunFeature(var, s)
-    end)
-    f.Parent = rightP
-    return f
-end
+-- ============== SPEED SLIDER ==============
+local sliderFrame = Instance.new("Frame")
+sliderFrame.Size = UDim2.new(0.9, 0, 0, 55)
+sliderFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 38)
+sliderFrame.BackgroundTransparency = 0.2
+sliderFrame.BorderSizePixel = 0
+local sFrameCorner = Instance.new("UICorner")
+sFrameCorner.CornerRadius = UDim.new(0, 10)
+sFrameCorner.Parent = sliderFrame
 
-function MakeSlider(name, var, min, max, def)
-    local f = Instance.new("Frame")
-    f.Size = UDim2.new(0.95, 0, 0, 44)
-    f.BackgroundColor3 = Color3.fromRGB(20, 20, 34)
-    f.BackgroundTransparency = 0.3
-    f.BorderSizePixel = 0
-    local fc = Instance.new("UICorner")
-    fc.CornerRadius = UDim.new(0, 7)
-    fc.Parent = f
+local sliderLabel = Instance.new("TextLabel")
+sliderLabel.Size = UDim2.new(0.6, 0, 0, 20)
+sliderLabel.Position = UDim2.new(0, 12, 0, 4)
+sliderLabel.BackgroundTransparency = 1
+sliderLabel.Text = "Walk Speed"
+sliderLabel.TextColor3 = Color3.fromRGB(210, 210, 225)
+sliderLabel.TextSize = 13
+sliderLabel.Font = Enum.Font.Gotham
+sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+sliderLabel.Parent = sliderFrame
+
+local sliderValue = Instance.new("TextLabel")
+sliderValue.Size = UDim2.new(0.35, 0, 0, 20)
+sliderValue.Position = UDim2.new(0.6, 0, 0, 4)
+sliderValue.BackgroundTransparency = 1
+sliderValue.Text = "16"
+sliderValue.TextColor3 = Color3.fromRGB(70, 130, 255)
+sliderValue.TextSize = 13
+sliderValue.Font = Enum.Font.GothamBold
+sliderValue.TextXAlignment = Enum.TextXAlignment.Right
+sliderValue.Parent = sliderFrame
+
+-- Slider BG
+local sliderBg = Instance.new("Frame")
+sliderBg.Size = UDim2.new(0.88, 0, 0, 5)
+sliderBg.Position = UDim2.new(0.06, 0, 0, 34)
+sliderBg.BackgroundColor3 = Color3.fromRGB(42, 42, 55)
+sliderBg.BorderSizePixel = 0
+local sbCorner = Instance.new("UICorner")
+sbCorner.CornerRadius = UDim.new(1, 0)
+sbCorner.Parent = sliderBg
+
+-- Slider Fill
+local sliderFill = Instance.new("Frame")
+sliderFill.Size = UDim2.new(0, 0, 1, 0)
+sliderFill.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
+sliderFill.BorderSizePixel = 0
+local sfCorner = Instance.new("UICorner")
+sfCorner.CornerRadius = UDim.new(1, 0)
+sfCorner.Parent = sliderFill
+sliderFill.Parent = sliderBg
+
+-- Slider Button (hitbox)
+local sliderHit = Instance.new("TextButton")
+sliderHit.Size = UDim2.new(1, 0, 1, 0)
+sliderHit.BackgroundTransparency = 1
+sliderHit.Text = ""
+sliderHit.Parent = sliderBg
+
+-- Slider drag
+local isSliding = false
+local minSpeed = 16
+local maxSpeed = 250
+
+local function updateSlider(pos)
+    local absX = sliderBg.AbsolutePosition.X
+    local absW = sliderBg.AbsoluteSize.X
+    local pct = math.clamp((pos - absX) / absW, 0, 1)
+    local val = math.floor(minSpeed + (maxSpeed - minSpeed) * pct)
+    val = math.clamp(val, minSpeed, maxSpeed)
     
-    local lb = Instance.new("TextLabel")
-    lb.Size = UDim2.new(0.55, 0, 0, 18)
-    lb.Position = UDim2.new(0, 10, 0, 2)
-    lb.BackgroundTransparency = 1
-    lb.Text = name
-    lb.TextColor3 = Color3.fromRGB(190, 190, 205)
-    lb.TextSize = 12
-    lb.Font = Enum.Font.Gotham
-    lb.TextXAlignment = Enum.TextXAlignment.Left
-    lb.Parent = f
+    _G.Hub.SpeedVal = val
+    sliderValue.Text = tostring(val)
+    sliderFill.Size = UDim2.new(pct, 0, 1, 0)
     
-    local vl = Instance.new("TextLabel")
-    vl.Size = UDim2.new(0.4, 0, 0, 18)
-    vl.Position = UDim2.new(0.55, 0, 0, 2)
-    vl.BackgroundTransparency = 1
-    vl.Text = tostring(def)
-    vl.TextColor3 = Color3.fromRGB(70, 130, 255)
-    vl.TextSize = 12
-    vl.Font = Enum.Font.GothamBold
-    vl.TextXAlignment = Enum.TextXAlignment.Right
-    vl.Parent = f
-    
-    local sbg = Instance.new("Frame")
-    sbg.Size = UDim2.new(0.9, 0, 0, 4)
-    sbg.Position = UDim2.new(0.05, 0, 0, 28)
-    sbg.BackgroundColor3 = Color3.fromRGB(40, 40, 53)
-    sbg.BorderSizePixel = 0
-    local sc = Instance.new("UICorner")
-    sc.CornerRadius = UDim.new(1, 0)
-    sc.Parent = sbg
-    
-    local sf = Instance.new("Frame")
-    local pct2 = (def - min) / (max - min)
-    sf.Size = UDim2.new(pct2, 0, 1, 0)
-    sf.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
-    sf.BorderSizePixel = 0
-    local sfc = Instance.new("UICorner")
-    sfc.CornerRadius = UDim.new(1, 0)
-    sfc.Parent = sf
-    sf.Parent = sbg
-    
-    local sbtn = Instance.new("TextButton")
-    sbtn.Size = UDim2.new(1, 0, 1, 0)
-    sbtn.BackgroundTransparency = 1
-    sbtn.Text = ""
-    sbtn.Parent = sbg
-    
-    local sliding = false
-    
-    local function upd(pos)
-        local ax = sbg.AbsolutePosition.X
-        local aw = sbg.AbsoluteSize.X
-        local p = math.clamp((pos - ax) / aw, 0, 1)
-        local v = math.floor(min + (max - min) * p)
-        v = math.clamp(v, min, max)
-        _G.S[var] = v
-        vl.Text = tostring(v)
-        sf.Size = UDim2.new(p, 0, 1, 0)
-        
-        -- Real-time update
-        if var == "WalkSpeed" and _G.S.Speed then
-            local c = plr.Character
-            if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = v end
+    -- Update speed in real-time if active
+    if _G.Hub.Speed then
+        local c = plr.Character
+        if c and c:FindFirstChild("Humanoid") then
+            c.Humanoid.WalkSpeed = val
         end
     end
-    
-    sbtn.InputBegan:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.Touch then
-            sliding = true
-            upd(inp.Position)
-        end
-    end)
-    sbtn.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.Touch then sliding = false end
-    end)
-    UIS.InputChanged:Connect(function(inp)
-        if sliding and inp.UserInputType == Enum.UserInputType.Touch then upd(inp.Position) end
-    end)
-    
-    f.Parent = rightP
 end
 
-function ShowSettings(fid, fname)
-    ClearRight()
-    rpTitle.Text = fname
+sliderHit.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        isSliding = true
+        updateSlider(input.Position)
+    end
+end)
+
+sliderHit.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        isSliding = false
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if isSliding and input.UserInputType == Enum.UserInputType.Touch then
+        updateSlider(input.Position)
+    end
+end)
+
+-- Set initial slider position (16/250 = 0%)
+sliderFill.Size = UDim2.new(0, 0, 1, 0)
+
+sliderFrame.Parent = content
+
+-- ============== FEATURE FUNCTIONS ==============
+
+local speedConnection = nil
+
+function StartSpeed()
+    if speedConnection then
+        speedConnection:Disconnect()
+        speedConnection = nil
+    end
     
-    if fid == "fly" then
-        MakeToggle("Active", "Fly")
-        MakeSlider("Speed", "FlySpeed", 10, 200, 50)
-    elseif fid == "speed" then
-        MakeToggle("Active", "Speed")
-        MakeSlider("Walk Speed", "WalkSpeed", 16, 250, 16)
-    elseif fid == "noclip" then
-        MakeToggle("Active", "Noclip")
-    elseif fid == "fling" then
-        MakeToggle("Active", "Fling")
-        MakeSlider("Power", "FlingPower", 50, 500, 100)
-    elseif fid == "esp" then
-        MakeToggle("Active", "ESP")
-        MakeToggle("   Line", "Line")
-        MakeToggle("   Box", "Box")
-        MakeToggle("   Name", "NameTag")
-        MakeToggle("   Highlight", "Highlight")
-        MakeToggle("   Studs", "Studs")
-    elseif fid == "invisible" then
-        MakeToggle("Active", "Invisible")
-    elseif fid == "fps" then
-        MakeToggle("Active", "FPS")
+    speedConnection = RS.RenderStepped:Connect(function()
+        if not _G.Hub.Speed then return end
+        local c = plr.Character
+        if c and c:FindFirstChild("Humanoid") then
+            c.Humanoid.WalkSpeed = _G.Hub.SpeedVal
+        end
+    end)
+end
+
+function StopSpeed()
+    if speedConnection then
+        speedConnection:Disconnect()
+        speedConnection = nil
+    end
+    local c = plr.Character
+    if c and c:FindFirstChild("Humanoid") then
+        c.Humanoid.WalkSpeed = 16
     end
 end
 
--- ============== BUILD FEATURE LIST ==============
-FeatBtn("Fly", "✈", "fly")
-FeatBtn("Speed", "⚡", "speed")
-FeatBtn("Noclip", "◈", "noclip")
-FeatBtn("Fling", "💥", "fling")
-FeatBtn("ESP", "👁", "esp")
-FeatBtn("Invisible", "👻", "invisible")
-FeatBtn("FPS Boost", "⚙", "fps")
+-- Respawn handler
+plr.CharacterAdded:Connect(function(char)
+    task.wait(0.5)
+    if _G.Hub.Speed and char:FindFirstChild("Humanoid") then
+        char.Humanoid.WalkSpeed = _G.Hub.SpeedVal
+        -- Restart speed loop
+        StartSpeed()
+    end
+end)
 
 -- ============== BUTTON EVENTS ==============
-local iconClicked = false
 
-icon.InputBegan:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.Touch then
-        iconClicked = true
+local iconTap = false
+
+icon.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        iconTap = true
         task.wait(0.15)
-        if iconClicked then
+        if iconTap then
             menu.Visible = not menu.Visible
         end
     end
 end)
 
-icon.InputEnded:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.Touch then
-        iconClicked = false
+icon.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        iconTap = false
     end
-end)
-
--- Refresh icon click
-local function handleIconClick()
-    menu.Visible = not menu.Visible
-end
-
-closeBtn.MouseButton1Click:Connect(function()
-    menu.Visible = false
-    icon.Visible = false
 end)
 
 hideBtn.MouseButton1Click:Connect(function()
     menu.Visible = false
-    icon.Visible = not icon.Visible
+    icon.Visible = false
 end)
 
--- ============== FEATURE FUNCTIONS - FIXED ==============
+closeBtn.MouseButton1Click:Connect(function()
+    -- Hapus GUI sepenuhnya
+    menu:Destroy()
+    icon:Destroy()
+    sg:Destroy()
+    -- Juga matikan fitur
+    StopSpeed()
+end)
 
-function RunFeature(var, state)
-    if var == "Fly" then
-        if state then StartFly() else StopFly() end
-    elseif var == "Speed" then
-        if state then StartSpeed() else StopSpeed() end
-    elseif var == "Noclip" then
-        if state then StartNoclip() else StopNoclip() end
-    elseif var == "Fling" then
-        if state then StartFling() else StopFling() end
-    elseif var == "Invisible" then
-        if state then StartInvisible() else StopInvisible() end
-    elseif var == "FPS" then
-        if state then StartFPS() else StopFPS() end
-    elseif var == "ESP" then
-        if state then StartESP() else StopESP() end
-    end
+-- ============== NOTIFICATION ==============
+task.wait(0.5)
+
+local notif = Instance.new("ScreenGui")
+notif.Name = "Notif"
+notif.ResetOnSpawn = false
+pcall(function() notif.Parent = plr:WaitForChild("PlayerGui") end)
+
+local notifFrame = Instance.new("Frame")
+notifFrame.Size = UDim2.new(0, 180, 0, 36)
+notifFrame.Position = UDim2.new(0.5, -90, 0.35, 0)
+notifFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 32)
+notifFrame.BackgroundTransparency = 0.1
+notifFrame.BorderSizePixel = 0
+local notifCorner = Instance.new("UICorner")
+notifCorner.CornerRadius = UDim.new(0, 10)
+notifCorner.Parent = notifFrame
+notifFrame.Parent = notif
+
+local notifText = Instance.new("TextLabel")
+notifText.Size = UDim2.new(1, 0, 1, 0)
+notifText.BackgroundTransparency = 1
+notifText.Text = "✓ Hub Active!"
+notifText.TextColor3 = Color3.fromRGB(70, 255, 130)
+notifText.TextSize = 14
+notifText.Font = Enum.Font.GothamBold
+notifText.Parent = notifFrame
+
+task.wait(2)
+for i = 1, 10 do
+    task.wait(0.05)
+    notifFrame.BackgroundTransparency = notifFrame.BackgroundTransparency + 0.1
+    notifText.TextTransparency = notifText.TextTransparency + 0.1
 end
-
--- ===== FLY =====
-function StartFly()
-    local c = plr.Character
-    if not c then return end
-    local h = c:FindFirstChild("HumanoidRootPart")
-    if not h then return end
-    if c:FindFirstChild("Humanoid") then c.Humanoid.PlatformStand = true end
-    
-    _G.C.Fly = RS.RenderStepped:Connect(function()
-        if not _G.S.Fly then return end
-        local c2 = plr.Character
-        if not c2 then return end
-        local h2 = c2:FindFirstChild("HumanoidRootPart")
-        if not h2 then return end
-        
-        local dir = Vector3.new()
-        if UIS:IsKeyDown(Enum.KeyCode.W) then dir = dir + Cam.CFrame.LookVector * Vector3.new(1,0,1) end
-        if UIS:IsKeyDown(Enum.KeyCode.S) then dir = dir - Cam.CFrame.LookVector * Vector3.new(1,0,1) end
-        if UIS:IsKeyDown(Enum.KeyCode.A) then dir = dir - Cam.CFrame.RightVector * Vector3.new(1,0,1) end
-        if UIS:IsKeyDown(Enum.KeyCode.D) then dir = dir + Cam.CFrame.RightVector * Vector3.new(1,0,1) end
-        if UIS:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0,1,0) end
-        if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then dir = dir + Vector3.new(0,-1,0) end
-        
-        -- Mobile touch controls
-        for _, t in ipairs(UIS:GetTouchInputs()) do
-            local sx = t.Position.X / Cam.ViewportSize.X
-            local sy = t.Position.Y / Cam.ViewportSize.Y
-            if sx < 0.5 then
-                local dx, dy = sx - 0.25, sy - 0.5
-                if math.abs(dy) > 0.12 then dir = dir + Vector3.new(0, 0, -dy * 3) end
-                if math.abs(dx) > 0.12 then dir = dir + Vector3.new(dx * 3, 0, 0) end
-            else
-                if sy < 0.3 then dir = dir + Vector3.new(0, 1, 0)
-                elseif sy > 0.7 then dir = dir + Vector3.new(0, -1, 0) end
-            end
-        end
-        
-        if dir.Magnitude > 0 then
-            dir = dir.Unit * _G.S.FlySpeed
-            h2.Velocity = dir
-            h2.AssemblyLinearVelocity = dir
-        end
-    end)
-end
-
-function StopFly()
-    if _G.C.Fly then _G.C.Fly:Disconnect() _G.C.Fly = nil end
-    local c = plr.Character
-    if c and c:FindFirstChild("Humanoid") then c.Humanoid.PlatformStand = false end
-end
-
--- ===== SPEED =====
-function StartSpeed()
-    _G.C.Speed = RS.RenderStepped:
+notif:Destroy()
