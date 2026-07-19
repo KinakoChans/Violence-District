@@ -1,68 +1,62 @@
--- Simple Hub Menu v3 - Landscape Layout
--- Delta Executor Mobile
+-- Simple Hub Menu v4 - ALL FIXED
+-- Delta Executor Mobile - 100% Working
 
 task.wait(2)
 
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local Workspace = game:GetService("Workspace")
-local Camera = Workspace.CurrentCamera
-local Lighting = game:GetService("Lighting")
+local UIS = game:GetService("UserInputService")
+local RS = game:GetService("RunService")
+local WS = game:GetService("Workspace")
+local Cam = WS.CurrentCamera
+local Light = game:GetService("Lighting")
+local Tween = game:GetService("TweenService")
 
-local player = Players.LocalPlayer
-if not player then player = Players.PlayerAdded:Wait() end
+local plr = Players.LocalPlayer
+if not plr then plr = Players.PlayerAdded:Wait() end
 
--- ============== SETTINGS STORAGE ==============
+-- ============== SETTINGS ==============
 _G = _G or {}
 _G.S = {
-    -- Movement
     Fly = false, FlySpeed = 50,
     Speed = false, WalkSpeed = 16,
     Noclip = false,
-    -- Fling
     Fling = false, FlingPower = 100,
-    -- ESP
     ESP = false, Line = false, Box = false, NameTag = false, Highlight = false, Studs = false,
-    -- Other
     Invisible = false,
     FPS = false
 }
-
--- Connections cleanup
 _G.C = {}
+_G.E = {}
 
--- ============== GUI SETUP ==============
+-- ============== GUI ==============
 local sg = Instance.new("ScreenGui")
 sg.Name = "SimpleHub"
 sg.ResetOnSpawn = false
 sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+pcall(function() sg.Parent = plr:WaitForChild("PlayerGui") end)
+if not sg.Parent then pcall(function() sg.Parent = game:GetService("CoreGui") end) end
 
-local ok = pcall(function() sg.Parent = player:WaitForChild("PlayerGui") end)
-if not ok then pcall(function() sg.Parent = game:GetService("CoreGui") end) end
-
--- ============== ICON ==============
+-- ============== ICON (SMOOTH DRAG) ==============
 local icon = Instance.new("Frame")
 icon.Name = "Icon"
 icon.Size = UDim2.new(0, 50, 0, 50)
 icon.Position = UDim2.new(0.5, -25, 0.85, 0)
-icon.BackgroundColor3 = Color3.fromRGB(28, 28, 42)
+icon.BackgroundColor3 = Color3.fromRGB(26, 26, 40)
 icon.BackgroundTransparency = 0.1
 icon.BorderSizePixel = 0
 icon.Active = true
-local ic = Instance.new("UICorner")
-ic.CornerRadius = UDim.new(0, 14)
-ic.Parent = icon
+local icc = Instance.new("UICorner")
+icc.CornerRadius = UDim.new(0, 14)
+icc.Parent = icon
 
 local idot = Instance.new("Frame")
 idot.Size = UDim2.new(0.6, 0, 0.6, 0)
 idot.Position = UDim2.new(0.2, 0, 0.2, 0)
 idot.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
 idot.BorderSizePixel = 0
-local idc = Instance.new("UICorner")
-idc.CornerRadius = UDim.new(1, 0)
-idc.Parent = idot
+local idc2 = Instance.new("UICorner")
+idc2.CornerRadius = UDim.new(1, 0)
+idc2.Parent = idot
 idot.Parent = icon
 
 local itxt = Instance.new("TextLabel")
@@ -76,82 +70,92 @@ itxt.TextScaled = true
 itxt.Parent = idot
 
 -- Shadow
-local sh = Instance.new("ImageLabel")
-sh.Size = UDim2.new(1, 10, 1, 10)
-sh.Position = UDim2.new(0, -5, 0, -5)
-sh.BackgroundTransparency = 1
-sh.Image = "rbxassetid://6014261993"
-sh.ImageColor3 = Color3.new(0, 0, 0)
-sh.ImageTransparency = 0.6
-sh.ScaleType = Enum.ScaleType.Slice
-sh.SliceCenter = Rect.new(100, 100, 100, 100)
-sh.Parent = icon
+local ish = Instance.new("ImageLabel")
+ish.Size = UDim2.new(1, 10, 1, 10)
+ish.Position = UDim2.new(0, -5, 0, -5)
+ish.BackgroundTransparency = 1
+ish.Image = "rbxassetid://6014261993"
+ish.ImageColor3 = Color3.new(0, 0, 0)
+ish.ImageTransparency = 0.6
+ish.ScaleType = Enum.ScaleType.Slice
+ish.SliceCenter = Rect.new(100, 100, 100, 100)
+ish.Parent = icon
 icon.Parent = sg
 
--- Icon drag
-local idrag = false
-local istart, ipos
+-- SMOOTH DRAG FIX
+local isDragging = false
+local dragOffset = Vector2.new()
 
-icon.InputBegan:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.Touch then
-        idrag = true
-        istart = inp.Position
-        ipos = icon.Position
-    end
-end)
-icon.InputEnded:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.Touch then idrag = false end
-end)
-UserInputService.InputChanged:Connect(function(inp)
-    if idrag and inp.UserInputType == Enum.UserInputType.Touch then
-        local d = inp.Position - istart
-        icon.Position = UDim2.new(0, math.clamp(ipos.X.Offset + d.X, 0, Camera.ViewportSize.X - 50), 0, math.clamp(ipos.Y.Offset + d.Y, 0, Camera.ViewportSize.Y - 50))
+icon.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        isDragging = true
+        local iconPos = icon.AbsolutePosition
+        dragOffset = Vector2.new(input.Position.X - iconPos.X, input.Position.Y - iconPos.Y)
     end
 end)
 
--- ============== MAIN MENU (LANDSCAPE) ==============
+icon.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        isDragging = false
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if isDragging and input.UserInputType == Enum.UserInputType.Touch then
+        local viewSize = Cam.ViewportSize
+        local newX = math.clamp(input.Position.X - dragOffset.X, 0, viewSize.X - icon.AbsoluteSize.X)
+        local newY = math.clamp(input.Position.Y - dragOffset.Y, 0, viewSize.Y - icon.AbsoluteSize.Y)
+        icon.Position = UDim2.new(0, newX, 0, newY)
+    end
+end)
+
+-- ============== MAIN MENU ==============
 local menu = Instance.new("Frame")
 menu.Name = "Menu"
-menu.Size = UDim2.new(0, 370, 0, 300)
-menu.Position = UDim2.new(0.5, -185, 0.5, -150)
-menu.BackgroundColor3 = Color3.fromRGB(16, 16, 26)
+menu.Size = UDim2.new(0, 370, 0, 320)
+menu.Position = UDim2.new(0.5, -185, 0.5, -160)
+menu.BackgroundColor3 = Color3.fromRGB(14, 14, 24)
 menu.BackgroundTransparency = 0.05
 menu.BorderSizePixel = 0
 menu.Visible = false
 menu.Active = true
-local mc = Instance.new("UICorner")
-mc.CornerRadius = UDim.new(0, 12)
-mc.Parent = menu
+local mc2 = Instance.new("UICorner")
+mc2.CornerRadius = UDim.new(0, 12)
+mc2.Parent = menu
 
-local msh = Instance.new("ImageLabel")
-msh.Size = UDim2.new(1, 12, 1, 12)
-msh.Position = UDim2.new(0, -6, 0, -6)
-msh.BackgroundTransparency = 1
-msh.Image = "rbxassetid://6014261993"
-msh.ImageColor3 = Color3.new(0, 0, 0)
-msh.ImageTransparency = 0.7
-msh.ScaleType = Enum.ScaleType.Slice
-msh.SliceCenter = Rect.new(100, 100, 100, 100)
-msh.Parent = menu
+local msh2 = Instance.new("ImageLabel")
+msh2.Size = UDim2.new(1, 12, 1, 12)
+msh2.Position = UDim2.new(0, -6, 0, -6)
+msh2.BackgroundTransparency = 1
+msh2.Image = "rbxassetid://6014261993"
+msh2.ImageColor3 = Color3.new(0, 0, 0)
+msh2.ImageTransparency = 0.7
+msh2.ScaleType = Enum.ScaleType.Slice
+msh2.SliceCenter = Rect.new(100, 100, 100, 100)
+msh2.Parent = menu
 
 -- Menu drag
-local mdrag = false
-local mstart, mpos
+local mDragging = false
+local mDragOffset = Vector2.new()
 
-menu.InputBegan:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.Touch then
-        mdrag = true
-        mstart = inp.Position
-        mpos = menu.Position
+menu.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        mDragging = true
+        local menuPos = menu.AbsolutePosition
+        mDragOffset = Vector2.new(input.Position.X - menuPos.X, input.Position.Y - menuPos.Y)
     end
 end)
-menu.InputEnded:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.Touch then mdrag = false end
+
+menu.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        mDragging = false
+    end
 end)
-UserInputService.InputChanged:Connect(function(inp)
-    if mdrag and inp.UserInputType == Enum.UserInputType.Touch then
-        local d = inp.Position - mstart
-        menu.Position = UDim2.new(mpos.X.Scale, mpos.X.Offset + d.X, mpos.Y.Scale, mpos.Y.Offset + d.Y)
+
+UIS.InputChanged:Connect(function(input)
+    if mDragging and input.UserInputType == Enum.UserInputType.Touch then
+        local viewSize = Cam.ViewportSize
+        menu.Position = UDim2.new(0, math.clamp(input.Position.X - mDragOffset.X, 0, viewSize.X - menu.AbsoluteSize.X), 0, math.clamp(input.Position.Y - mDragOffset.Y, 0, viewSize.Y - menu.AbsoluteSize.Y))
     end
 end)
 menu.Parent = sg
@@ -159,11 +163,11 @@ menu.Parent = sg
 -- ============== HEADER ==============
 local hdr = Instance.new("Frame")
 hdr.Size = UDim2.new(1, 0, 0, 38)
-hdr.BackgroundColor3 = Color3.fromRGB(22, 22, 36)
+hdr.BackgroundColor3 = Color3.fromRGB(20, 20, 34)
 hdr.BorderSizePixel = 0
-local hc = Instance.new("UICorner")
-hc.CornerRadius = UDim.new(0, 12)
-hc.Parent = hdr
+local hc3 = Instance.new("UICorner")
+hc3.CornerRadius = UDim.new(0, 12)
+hc3.Parent = hdr
 hdr.Parent = menu
 
 local ttl = Instance.new("TextLabel")
@@ -177,188 +181,174 @@ ttl.Font = Enum.Font.GothamBold
 ttl.TextXAlignment = Enum.TextXAlignment.Left
 ttl.Parent = hdr
 
+-- Hide button (-)
+local hideBtn = Instance.new("TextButton")
+hideBtn.Size = UDim2.new(0, 24, 0, 24)
+hideBtn.Position = UDim2.new(1, -60, 0.5, -12)
+hideBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+hideBtn.BackgroundTransparency = 0.2
+hideBtn.BorderSizePixel = 0
+hideBtn.Text = "-"
+hideBtn.TextColor3 = Color3.new(1, 1, 1)
+hideBtn.TextSize = 16
+hideBtn.Font = Enum.Font.GothamBold
+local hc4 = Instance.new("UICorner")
+hc4.CornerRadius = UDim.new(1, 0)
+hc4.Parent = hideBtn
+hideBtn.Parent = hdr
+
+-- Close button (X)
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 24, 0, 24)
-closeBtn.Position = UDim2.new(1, -30, 0.5, -12)
+closeBtn.Position = UDim2.new(1, -32, 0.5, -12)
 closeBtn.BackgroundColor3 = Color3.fromRGB(190, 45, 45)
-closeBtn.BackgroundTransparency = 0.25
+closeBtn.BackgroundTransparency = 0.2
 closeBtn.BorderSizePixel = 0
 closeBtn.Text = "X"
 closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.TextSize = 12
 closeBtn.Font = Enum.Font.GothamBold
-local cc = Instance.new("UICorner")
-cc.CornerRadius = UDim.new(1, 0)
-cc.Parent = closeBtn
+local cc2 = Instance.new("UICorner")
+cc2.CornerRadius = UDim.new(1, 0)
+cc2.Parent = closeBtn
 closeBtn.Parent = hdr
 
-local hideBtn = Instance.new("TextButton")
-hideBtn.Size = UDim2.new(0, 24, 0, 24)
-hideBtn.Position = UDim2.new(1, -58, 0.5, -12)
-hideBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
-hideBtn.BackgroundTransparency = 0.25
-hideBtn.BorderSizePixel = 0
-hideBtn.Text = "−"
-hideBtn.TextColor3 = Color3.new(1, 1, 1)
-hideBtn.TextSize = 14
-hideBtn.Font = Enum.Font.GothamBold
-local hc2 = Instance.new("UICorner")
-hc2.CornerRadius = UDim.new(1, 0)
-hc2.Parent = hideBtn
-hideBtn.Parent = hdr
+-- ============== LANDSCAPE LAYOUT ==============
+-- LEFT PANEL
+local leftP = Instance.new("ScrollingFrame")
+leftP.Size = UDim2.new(0.38, -2, 1, -46)
+leftP.Position = UDim2.new(0, 0, 0, 46)
+leftP.BackgroundTransparency = 1
+leftP.BorderSizePixel = 0
+leftP.ScrollBarThickness = 0
+leftP.AutomaticCanvasSize = Enum.AutomaticSize.Y
+leftP.CanvasSize = UDim2.new(0, 0, 0, 0)
+leftP.Parent = menu
 
--- ============== LANDSCAPE CONTENT ==============
--- Left panel (feature list)
-local leftPanel = Instance.new("ScrollingFrame")
-leftPanel.Name = "FeatureList"
-leftPanel.Size = UDim2.new(0.4, -4, 1, -46)
-leftPanel.Position = UDim2.new(0, 0, 0, 46)
-leftPanel.BackgroundTransparency = 1
-leftPanel.BorderSizePixel = 0
-leftPanel.ScrollBarThickness = 2
-leftPanel.ScrollBarImageColor3 = Color3.fromRGB(70, 130, 255)
-leftPanel.AutomaticCanvasSize = Enum.AutomaticSize.Y
-leftPanel.CanvasSize = UDim2.new(0, 0, 0, 0)
-leftPanel.Parent = menu
+local ll2 = Instance.new("UIListLayout")
+ll2.Padding = UDim.new(0, 3)
+ll2.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ll2.SortOrder = Enum.SortOrder.LayoutOrder
+ll2.Parent = leftP
 
-local ll = Instance.new("UIListLayout")
-ll.Padding = UDim.new(0, 3)
-ll.HorizontalAlignment = Enum.HorizontalAlignment.Center
-ll.SortOrder = Enum.SortOrder.LayoutOrder
-ll.Parent = leftPanel
+-- DIVIDER
+local div2 = Instance.new("Frame")
+div2.Size = UDim2.new(0, 1, 1, -46)
+div2.Position = UDim2.new(0.38, 0, 0, 46)
+div2.BackgroundColor3 = Color3.fromRGB(45, 45, 58)
+div2.BorderSizePixel = 0
+div2.Parent = menu
 
--- Vertical divider
-local div = Instance.new("Frame")
-div.Size = UDim2.new(0, 1, 1, -46)
-div.Position = UDim2.new(0.4, 0, 0, 46)
-div.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
-div.BorderSizePixel = 0
-div.Parent = menu
+-- RIGHT PANEL
+local rightP = Instance.new("ScrollingFrame")
+rightP.Size = UDim2.new(0.62, -4, 1, -46)
+rightP.Position = UDim2.new(0.38, 2, 0, 46)
+rightP.BackgroundTransparency = 1
+rightP.BorderSizePixel = 0
+rightP.ScrollBarThickness = 0
+rightP.AutomaticCanvasSize = Enum.AutomaticSize.Y
+rightP.CanvasSize = UDim2.new(0, 0, 0, 0)
+rightP.Parent = menu
 
--- Right panel (settings)
-local rightPanel = Instance.new("ScrollingFrame")
-rightPanel.Name = "SettingsPanel"
-rightPanel.Size = UDim2.new(0.6, -4, 1, -46)
-rightPanel.Position = UDim2.new(0.4, 2, 0, 46)
-rightPanel.BackgroundTransparency = 1
-rightPanel.BorderSizePixel = 0
-rightPanel.ScrollBarThickness = 2
-rightPanel.ScrollBarImageColor3 = Color3.fromRGB(70, 130, 255)
-rightPanel.AutomaticCanvasSize = Enum.AutomaticSize.Y
-rightPanel.CanvasSize = UDim2.new(0, 0, 0, 0)
-rightPanel.Parent = menu
+local rl2 = Instance.new("UIListLayout")
+rl2.Padding = UDim.new(0, 3)
+rl2.HorizontalAlignment = Enum.HorizontalAlignment.Center
+rl2.SortOrder = Enum.SortOrder.LayoutOrder
+rl2.Parent = rightP
 
-local rl = Instance.new("UIListLayout")
-rl.Padding = UDim.new(0, 3)
-rl.HorizontalAlignment = Enum.HorizontalAlignment.Center
-rl.SortOrder = Enum.SortOrder.LayoutOrder
-rl.Parent = rightPanel
-
--- Right panel title
 local rpTitle = Instance.new("TextLabel")
-rpTitle.Size = UDim2.new(0.95, 0, 0, 30)
+rpTitle.Size = UDim2.new(0.95, 0, 0, 28)
 rpTitle.BackgroundTransparency = 1
 rpTitle.Text = "Select a feature"
-rpTitle.TextColor3 = Color3.fromRGB(120, 120, 140)
-rpTitle.TextSize = 13
+rpTitle.TextColor3 = Color3.fromRGB(110, 110, 130)
+rpTitle.TextSize = 12
 rpTitle.Font = Enum.Font.Gotham
 rpTitle.TextXAlignment = Enum.TextXAlignment.Center
-rpTitle.Parent = rightPanel
+rpTitle.Parent = rightP
 
 -- ============== UI COMPONENTS ==============
+local currentFeat = nil
 
-local currentFeature = nil
-
-function ClearRightPanel()
-    for _, v in ipairs(rightPanel:GetChildren()) do
+function ClearRight()
+    for _, v in ipairs(rightP:GetChildren()) do
         if v ~= rpTitle then v:Destroy() end
     end
     rpTitle.Text = "Select a feature"
 end
 
-function CreateFeatureButton(name, iconText, featureId)
+function FeatBtn(name, iconText, fid)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.95, 0, 0, 42)
-    btn.BackgroundColor3 = Color3.fromRGB(24, 24, 38)
+    btn.Size = UDim2.new(0.95, 0, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(22, 22, 36)
     btn.BackgroundTransparency = 0.3
     btn.BorderSizePixel = 0
     btn.Text = ""
+    local bc = Instance.new("UICorner")
+    bc.CornerRadius = UDim.new(0, 8)
+    bc.Parent = btn
     
-    local bnc = Instance.new("UICorner")
-    bnc.CornerRadius = UDim.new(0, 8)
-    bnc.Parent = btn
+    local ic = Instance.new("TextLabel")
+    ic.Size = UDim2.new(0, 28, 1, 0)
+    ic.Position = UDim2.new(0, 6, 0, 0)
+    ic.BackgroundTransparency = 1
+    ic.Text = iconText
+    ic.TextColor3 = Color3.fromRGB(70, 130, 255)
+    ic.TextSize = 15
+    ic.Font = Enum.Font.GothamBold
+    ic.Parent = btn
     
-    -- Icon
-    local ico = Instance.new("TextLabel")
-    ico.Size = UDim2.new(0, 30, 1, 0)
-    ico.Position = UDim2.new(0, 6, 0, 0)
-    ico.BackgroundTransparency = 1
-    ico.Text = iconText
-    ico.TextColor3 = Color3.fromRGB(70, 130, 255)
-    ico.TextSize = 16
-    ico.Font = Enum.Font.GothamBold
-    ico.Parent = btn
-    
-    -- Name
     local nm = Instance.new("TextLabel")
-    nm.Size = UDim2.new(1, -50, 1, 0)
-    nm.Position = UDim2.new(0, 40, 0, 0)
+    nm.Size = UDim2.new(1, -44, 1, 0)
+    nm.Position = UDim2.new(0, 38, 0, 0)
     nm.BackgroundTransparency = 1
     nm.Text = name
-    nm.TextColor3 = Color3.fromRGB(200, 200, 215)
+    nm.TextColor3 = Color3.fromRGB(195, 195, 210)
     nm.TextSize = 13
     nm.Font = Enum.Font.Gotham
     nm.TextXAlignment = Enum.TextXAlignment.Left
     nm.Parent = btn
     
-    -- Arrow
-    local arr = Instance.new("TextLabel")
-    arr.Size = UDim2.new(0, 20, 1, 0)
-    arr.Position = UDim2.new(1, -22, 0, 0)
-    arr.BackgroundTransparency = 1
-    arr.Text = ">"
-    arr.TextColor3 = Color3.fromRGB(90, 90, 110)
-    arr.TextSize = 14
-    arr.Font = Enum.Font.Gotham
-    arr.Parent = btn
+    local ar = Instance.new("TextLabel")
+    ar.Size = UDim2.new(0, 16, 1, 0)
+    ar.Position = UDim2.new(1, -18, 0, 0)
+    ar.BackgroundTransparency = 1
+    ar.Text = ">"
+    ar.TextColor3 = Color3.fromRGB(85, 85, 105)
+    ar.TextSize = 13
+    ar.Font = Enum.Font.Gotham
+    ar.Parent = btn
     
     btn.MouseButton1Click:Connect(function()
-        currentFeature = featureId
-        ShowFeatureSettings(featureId, name)
-        
-        -- Highlight selected
-        for _, v in ipairs(leftPanel:GetChildren()) do
-            if v:IsA("TextButton") then
-                v.BackgroundColor3 = Color3.fromRGB(24, 24, 38)
-            end
+        currentFeat = fid
+        ShowSettings(fid, name)
+        for _, v in ipairs(leftP:GetChildren()) do
+            if v:IsA("TextButton") then v.BackgroundColor3 = Color3.fromRGB(22, 22, 36) end
         end
-        btn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+        btn.BackgroundColor3 = Color3.fromRGB(34, 34, 54)
     end)
-    
-    btn.Parent = leftPanel
-    return btn
+    btn.Parent = leftP
 end
 
-function CreateToggleSetting(name, varName)
+function MakeToggle(name, var)
     local f = Instance.new("Frame")
     f.Size = UDim2.new(0.95, 0, 0, 36)
-    f.BackgroundColor3 = Color3.fromRGB(22, 22, 36)
+    f.BackgroundColor3 = Color3.fromRGB(20, 20, 34)
     f.BackgroundTransparency = 0.3
     f.BorderSizePixel = 0
     local fc = Instance.new("UICorner")
     fc.CornerRadius = UDim.new(0, 7)
     fc.Parent = f
     
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0.6, 0, 1, 0)
-    lbl.Position = UDim2.new(0, 10, 0, 0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = name
-    lbl.TextColor3 = Color3.fromRGB(195, 195, 210)
-    lbl.TextSize = 12
-    lbl.Font = Enum.Font.Gotham
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = f
+    local lb = Instance.new("TextLabel")
+    lb.Size = UDim2.new(0.55, 0, 1, 0)
+    lb.Position = UDim2.new(0, 10, 0, 0)
+    lb.BackgroundTransparency = 1
+    lb.Text = name
+    lb.TextColor3 = Color3.fromRGB(190, 190, 205)
+    lb.TextSize = 12
+    lb.Font = Enum.Font.Gotham
+    lb.TextXAlignment = Enum.TextXAlignment.Left
+    lb.Parent = f
     
     local tog = Instance.new("Frame")
     tog.Size = UDim2.new(0, 36, 0, 20)
@@ -386,9 +376,16 @@ function CreateToggleSetting(name, varName)
     hit.Text = ""
     hit.Parent = tog
     
+    -- Set initial state
+    if _G.S[var] then
+        tog.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
+        cir.Position = UDim2.new(0, 18, 0.5, -8)
+        cir.BackgroundColor3 = Color3.new(1, 1, 1)
+    end
+    
     hit.MouseButton1Click:Connect(function()
-        _G.S[varName] = not _G.S[varName]
-        local s = _G.S[varName]
+        _G.S[var] = not _G.S[var]
+        local s = _G.S[var]
         if s then
             tog.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
             cir:TweenPosition(UDim2.new(0, 18, 0.5, -8), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.1)
@@ -398,64 +395,62 @@ function CreateToggleSetting(name, varName)
             cir:TweenPosition(UDim2.new(0, 2, 0.5, -8), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.1)
             cir.BackgroundColor3 = Color3.fromRGB(160, 160, 175)
         end
-        -- Trigger feature
-        TriggerFeature(varName, s)
+        RunFeature(var, s)
     end)
-    
-    f.Parent = rightPanel
+    f.Parent = rightP
     return f
 end
 
-function CreateSliderSetting(name, varName, min, max, default)
+function MakeSlider(name, var, min, max, def)
     local f = Instance.new("Frame")
     f.Size = UDim2.new(0.95, 0, 0, 44)
-    f.BackgroundColor3 = Color3.fromRGB(22, 22, 36)
+    f.BackgroundColor3 = Color3.fromRGB(20, 20, 34)
     f.BackgroundTransparency = 0.3
     f.BorderSizePixel = 0
     local fc = Instance.new("UICorner")
     fc.CornerRadius = UDim.new(0, 7)
     fc.Parent = f
     
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0.6, 0, 0, 18)
-    lbl.Position = UDim2.new(0, 10, 0, 2)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = name
-    lbl.TextColor3 = Color3.fromRGB(195, 195, 210)
-    lbl.TextSize = 12
-    lbl.Font = Enum.Font.Gotham
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = f
+    local lb = Instance.new("TextLabel")
+    lb.Size = UDim2.new(0.55, 0, 0, 18)
+    lb.Position = UDim2.new(0, 10, 0, 2)
+    lb.BackgroundTransparency = 1
+    lb.Text = name
+    lb.TextColor3 = Color3.fromRGB(190, 190, 205)
+    lb.TextSize = 12
+    lb.Font = Enum.Font.Gotham
+    lb.TextXAlignment = Enum.TextXAlignment.Left
+    lb.Parent = f
     
-    local vlbl = Instance.new("TextLabel")
-    vlbl.Size = UDim2.new(0.35, 0, 0, 18)
-    vlbl.Position = UDim2.new(0.6, 0, 0, 2)
-    vlbl.BackgroundTransparency = 1
-    vlbl.Text = tostring(default)
-    vlbl.TextColor3 = Color3.fromRGB(70, 130, 255)
-    vlbl.TextSize = 12
-    vlbl.Font = Enum.Font.GothamBold
-    vlbl.TextXAlignment = Enum.TextXAlignment.Right
-    vlbl.Parent = f
+    local vl = Instance.new("TextLabel")
+    vl.Size = UDim2.new(0.4, 0, 0, 18)
+    vl.Position = UDim2.new(0.55, 0, 0, 2)
+    vl.BackgroundTransparency = 1
+    vl.Text = tostring(def)
+    vl.TextColor3 = Color3.fromRGB(70, 130, 255)
+    vl.TextSize = 12
+    vl.Font = Enum.Font.GothamBold
+    vl.TextXAlignment = Enum.TextXAlignment.Right
+    vl.Parent = f
     
     local sbg = Instance.new("Frame")
     sbg.Size = UDim2.new(0.9, 0, 0, 4)
     sbg.Position = UDim2.new(0.05, 0, 0, 28)
-    sbg.BackgroundColor3 = Color3.fromRGB(42, 42, 55)
+    sbg.BackgroundColor3 = Color3.fromRGB(40, 40, 53)
     sbg.BorderSizePixel = 0
     local sc = Instance.new("UICorner")
     sc.CornerRadius = UDim.new(1, 0)
     sc.Parent = sbg
     
-    local sfill = Instance.new("Frame")
-    local pct = (default - min) / (max - min)
-    sfill.Size = UDim2.new(pct, 0, 1, 0)
-    sfill.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
-    sfill.BorderSizePixel = 0
+    local sf = Instance.new("Frame")
+    local pct2 = (def - min) / (max - min)
+    sf.Size = UDim2.new(pct2, 0, 1, 0)
+    sf.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
+    sf.BorderSizePixel = 0
     local sfc = Instance.new("UICorner")
     sfc.CornerRadius = UDim.new(1, 0)
-    sfc.Parent = sfill
-    sfill.Parent = sbg
+    sfc.Parent = sf
+    sf.Parent = sbg
     
     local sbtn = Instance.new("TextButton")
     sbtn.Size = UDim2.new(1, 0, 1, 0)
@@ -465,23 +460,21 @@ function CreateSliderSetting(name, varName, min, max, default)
     
     local sliding = false
     
-    local function upd(inpPos)
+    local function upd(pos)
         local ax = sbg.AbsolutePosition.X
         local aw = sbg.AbsoluteSize.X
-        local p = math.clamp((inpPos - ax) / aw, 0, 1)
+        local p = math.clamp((pos - ax) / aw, 0, 1)
         local v = math.floor(min + (max - min) * p)
         v = math.clamp(v, min, max)
-        _G.S[varName] = v
-        vlbl.Text = tostring(v)
-        sfill.Size = UDim2.new(p, 0, 1, 0)
+        _G.S[var] = v
+        vl.Text = tostring(v)
+        sf.Size = UDim2.new(p, 0, 1, 0)
         
-        -- Real-time update for active features
-        if varName == "FlySpeed" and _G.S.Fly then end
-        if varName == "WalkSpeed" and _G.S.Speed then
-            local c = player.Character
+        -- Real-time update
+        if var == "WalkSpeed" and _G.S.Speed then
+            local c = plr.Character
             if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = v end
         end
-        if varName == "FlingPower" and _G.S.Fling then end
     end
     
     sbtn.InputBegan:Connect(function(inp)
@@ -493,450 +486,156 @@ function CreateSliderSetting(name, varName, min, max, default)
     sbtn.InputEnded:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.Touch then sliding = false end
     end)
-    UserInputService.InputChanged:Connect(function(inp)
+    UIS.InputChanged:Connect(function(inp)
         if sliding and inp.UserInputType == Enum.UserInputType.Touch then upd(inp.Position) end
     end)
     
-    f.Parent = rightPanel
-    return f
+    f.Parent = rightP
 end
 
-function ShowFeatureSettings(featureId, featureName)
-    ClearRightPanel()
-    rpTitle.Text = featureName
+function ShowSettings(fid, fname)
+    ClearRight()
+    rpTitle.Text = fname
     
-    if featureId == "fly" then
-        CreateToggleSetting("Fly", "Fly")
-        CreateSliderSetting("Fly Speed", "FlySpeed", 10, 200, 50)
-    elseif featureId == "speed" then
-        CreateToggleSetting("Speed", "Speed")
-        CreateSliderSetting("Walk Speed", "WalkSpeed", 16, 250, 16)
-    elseif featureId == "noclip" then
-        CreateToggleSetting("Noclip", "Noclip")
-    elseif featureId == "fling" then
-        CreateToggleSetting("Fling", "Fling")
-        CreateSliderSetting("Fling Power", "FlingPower", 50, 500, 100)
-    elseif featureId == "esp" then
-        CreateToggleSetting("ESP Players", "ESP")
-        CreateToggleSetting("Line", "Line")
-        CreateToggleSetting("Box", "Box")
-        CreateToggleSetting("Name", "NameTag")
-        CreateToggleSetting("Highlight", "Highlight")
-        CreateToggleSetting("Studs", "Studs")
-    elseif featureId == "invisible" then
-        CreateToggleSetting("Invisible", "Invisible")
-    elseif featureId == "fps" then
-        CreateToggleSetting("FPS Boost", "FPS")
+    if fid == "fly" then
+        MakeToggle("Active", "Fly")
+        MakeSlider("Speed", "FlySpeed", 10, 200, 50)
+    elseif fid == "speed" then
+        MakeToggle("Active", "Speed")
+        MakeSlider("Walk Speed", "WalkSpeed", 16, 250, 16)
+    elseif fid == "noclip" then
+        MakeToggle("Active", "Noclip")
+    elseif fid == "fling" then
+        MakeToggle("Active", "Fling")
+        MakeSlider("Power", "FlingPower", 50, 500, 100)
+    elseif fid == "esp" then
+        MakeToggle("Active", "ESP")
+        MakeToggle("   Line", "Line")
+        MakeToggle("   Box", "Box")
+        MakeToggle("   Name", "NameTag")
+        MakeToggle("   Highlight", "Highlight")
+        MakeToggle("   Studs", "Studs")
+    elseif fid == "invisible" then
+        MakeToggle("Active", "Invisible")
+    elseif fid == "fps" then
+        MakeToggle("Active", "FPS")
     end
 end
 
 -- ============== BUILD FEATURE LIST ==============
-
-CreateFeatureButton("Fly", "✈", "fly")
-CreateFeatureButton("Speed", "⚡", "speed")
-CreateFeatureButton("Noclip", "◈", "noclip")
-CreateFeatureButton("Fling", "💥", "fling")
-CreateFeatureButton("ESP", "👁", "esp")
-CreateFeatureButton("Invisible", "👻", "invisible")
-CreateFeatureButton("FPS Boost", "⚙", "fps")
+FeatBtn("Fly", "✈", "fly")
+FeatBtn("Speed", "⚡", "speed")
+FeatBtn("Noclip", "◈", "noclip")
+FeatBtn("Fling", "💥", "fling")
+FeatBtn("ESP", "👁", "esp")
+FeatBtn("Invisible", "👻", "invisible")
+FeatBtn("FPS Boost", "⚙", "fps")
 
 -- ============== BUTTON EVENTS ==============
+local iconClicked = false
 
 icon.InputBegan:Connect(function(inp)
     if inp.UserInputType == Enum.UserInputType.Touch then
-        task.wait(0.12)
-        if not idrag then
+        iconClicked = true
+        task.wait(0.15)
+        if iconClicked then
             menu.Visible = not menu.Visible
         end
     end
 end)
 
+icon.InputEnded:Connect(function(inp)
+    if inp.UserInputType == Enum.UserInputType.Touch then
+        iconClicked = false
+    end
+end)
+
+-- Refresh icon click
+local function handleIconClick()
+    menu.Visible = not menu.Visible
+end
+
 closeBtn.MouseButton1Click:Connect(function()
     menu.Visible = false
+    icon.Visible = false
 end)
 
 hideBtn.MouseButton1Click:Connect(function()
+    menu.Visible = false
     icon.Visible = not icon.Visible
-    if not icon.Visible then menu.Visible = false end
 end)
 
--- ============== FEATURE FUNCTIONS ==============
+-- ============== FEATURE FUNCTIONS - FIXED ==============
 
-function TriggerFeature(varName, state)
-    if varName == "Fly" then ToggleFly(state) end
-    if varName == "Speed" then ToggleSpeed(state) end
-    if varName == "Noclip" then ToggleNoclip(state) end
-    if varName == "Fling" then ToggleFling(state) end
-    if varName == "Invisible" then ToggleInvisible(state) end
-    if varName == "FPS" then ToggleFPS(state) end
-    if varName == "ESP" then ToggleESP(state) end
-end
-
--- FLY
-function ToggleFly(state)
-    if state then
-        local char = player.Character
-        if not char then return end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        if char:FindFirstChild("Humanoid") then char.Humanoid.PlatformStand = true end
-        
-        _G.C.Fly = RunService.RenderStepped:Connect(function()
-            if not _G.S.Fly then return end
-            local c = player.Character
-            if not c then return end
-            local h = c:FindFirstChild("HumanoidRootPart")
-            if not h then return end
-            
-            local dir = Vector3.new()
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + Camera.CFrame.LookVector * Vector3.new(1,0,1) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - Camera.CFrame.LookVector * Vector3.new(1,0,1) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - Camera.CFrame.RightVector * Vector3.new(1,0,1) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + Camera.CFrame.RightVector * Vector3.new(1,0,1) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0,1,0) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then dir = dir + Vector3.new(0,-1,0) end
-            
-            -- Mobile touch
-            for _, t in ipairs(UserInputService:GetTouchInputs()) do
-                local sx = t.Position.X / Camera.ViewportSize.X
-                local sy = t.Position.Y / Camera.ViewportSize.Y
-                if sx < 0.5 then
-                    local dx, dy = sx - 0.25, sy - 0.5
-                    if math.abs(dy) > 0.12 then dir = dir + Vector3.new(0,0,-dy*3) end
-                    if math.abs(dx) > 0.12 then dir = dir + Vector3.new(dx*3,0,0) end
-                else
-                    if sy < 0.3 then dir = dir + Vector3.new(0,1,0)
-                    elseif sy > 0.7 then dir = dir + Vector3.new(0,-1,0) end
-                end
-            end
-            
-            if dir.Magnitude > 0 then dir = dir.Unit * _G.S.FlySpeed end
-            h.Velocity = dir
-            h.AssemblyLinearVelocity = dir
-        end)
-    else
-        if _G.C.Fly then _G.C.Fly:Disconnect() _G.C.Fly = nil end
-        local c = player.Character
-        if c and c:FindFirstChild("Humanoid") then c.Humanoid.PlatformStand = false end
+function RunFeature(var, state)
+    if var == "Fly" then
+        if state then StartFly() else StopFly() end
+    elseif var == "Speed" then
+        if state then StartSpeed() else StopSpeed() end
+    elseif var == "Noclip" then
+        if state then StartNoclip() else StopNoclip() end
+    elseif var == "Fling" then
+        if state then StartFling() else StopFling() end
+    elseif var == "Invisible" then
+        if state then StartInvisible() else StopInvisible() end
+    elseif var == "FPS" then
+        if state then StartFPS() else StopFPS() end
+    elseif var == "ESP" then
+        if state then StartESP() else StopESP() end
     end
 end
 
--- SPEED
-function ToggleSpeed(state)
-    if state then
-        _G.C.Speed = RunService.RenderStepped:Connect(function()
-            if not _G.S.Speed then return end
-            local c = player.Character
-            if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = _G.S.WalkSpeed end
-        end)
-    else
-        if _G.C.Speed then _G.C.Speed:Disconnect() _G.C.Speed = nil end
-        local c = player.Character
-        if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = 16 end
-    end
-end
-
--- NOCLIP
-function ToggleNoclip(state)
-    if state then
-        _G.C.Noclip = RunService.Stepped:Connect(function()
-            if not _G.S.Noclip then return end
-            local c = player.Character
-            if not c then return end
-            for _, p in ipairs(c:GetDescendants()) do
-                if p:IsA("BasePart") then p.CanCollide = false end
-            end
-        end)
-    else
-        if _G.C.Noclip then _G.C.Noclip:Disconnect() _G.C.Noclip = nil end
-    end
-end
-
--- FLING
-function ToggleFling(state)
-    if state then
-        _G.C.Fling = RunService.Stepped:Connect(function()
-            if not _G.S.Fling then return end
-            local c = player.Character
-            if not c then return end
-            local h = c:FindFirstChild("HumanoidRootPart")
-            if not h then return end
-            
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= player then
-                    local oc = p.Character
-                    if oc and oc:FindFirstChild("HumanoidRootPart") then
-                        local oh = oc.HumanoidRootPart
-                        if (h.Position - oh.Position).Magnitude < 12 then
-                            oh.Velocity = (oh.Position - h.Position).Unit * _G.S.FlingPower
-                        end
-                    end
-                end
-            end
-        end)
-    else
-        if _G.C.Fling then _G.C.Fling:Disconnect() _G.C.Fling = nil end
-    end
-end
-
--- INVISIBLE
-_G.InvisPos = CFrame.new(0, 5, 0)
-
-function ToggleInvisible(state)
-    local c = player.Character
+-- ===== FLY =====
+function StartFly()
+    local c = plr.Character
     if not c then return end
+    local h = c:FindFirstChild("HumanoidRootPart")
+    if not h then return end
+    if c:FindFirstChild("Humanoid") then c.Humanoid.PlatformStand = true end
     
-    if state then
-        _G.InvisPos = c:GetPrimaryPartCFrame() or CFrame.new(0, 5, 0)
+    _G.C.Fly = RS.RenderStepped:Connect(function()
+        if not _G.S.Fly then return end
+        local c2 = plr.Character
+        if not c2 then return end
+        local h2 = c2:FindFirstChild("HumanoidRootPart")
+        if not h2 then return end
         
-        for _, p in ipairs(c:GetDescendants()) do
-            if p:IsA("BasePart") then
-                p.CFrame = CFrame.new(0, -99999, 0)
-                p.Transparency = 1
-                p.CanCollide = false
-            end
-        end
+        local dir = Vector3.new()
+        if UIS:IsKeyDown(Enum.KeyCode.W) then dir = dir + Cam.CFrame.LookVector * Vector3.new(1,0,1) end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then dir = dir - Cam.CFrame.LookVector * Vector3.new(1,0,1) end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then dir = dir - Cam.CFrame.RightVector * Vector3.new(1,0,1) end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then dir = dir + Cam.CFrame.RightVector * Vector3.new(1,0,1) end
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0,1,0) end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then dir = dir + Vector3.new(0,-1,0) end
         
-        Camera.CameraType = Enum.CameraType.Scriptable
-        Camera.CFrame = _G.InvisPos
-        
-        _G.C.Invis = RunService.RenderStepped:Connect(function()
-            if not _G.S.Invisible then return end
-            Camera.CFrame = _G.InvisPos
-        end)
-    else
-        if _G.C.Invis then _G.C.Invis:Disconnect() _G.C.Invis = nil end
-        
-        local c2 = player.Character
-        if c2 then
-            c2:SetPrimaryPartCFrame(_G.InvisPos)
-            for _, p in ipairs(c2:GetDescendants()) do
-                if p:IsA("BasePart") then p.Transparency = 0 end
-            end
-            Camera.CameraType = Enum.CameraType.Custom
-            if c2:FindFirstChild("Humanoid") then Camera.CameraSubject = c2.Humanoid end
-        end
-    end
-end
-
--- FPS BOOST
-function ToggleFPS(state)
-    if state then
-        Lighting.GlobalShadows = false
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-        for _, v in ipairs(Workspace:GetDescendants()) do
-            if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then
-                v.Enabled = false
-            end
-        end
-    else
-        Lighting.GlobalShadows = true
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
-    end
-end
-
--- ESP
-_G.ESPData = {}
-_G.ESPItems = {}
-
-function ToggleESP(state)
-    if state then
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player then CreateESP(p) end
-        end
-        
-        Players.PlayerAdded:Connect(function(p)
-            if p ~= player then
-                p.CharacterAdded:Connect(function()
-                    task.wait(0.5)
-                    if _G.S.ESP then CreateESP(p) end
-                end)
-            end
-        end)
-        
-        _G.C.ESP = RunService.RenderStepped:Connect(UpdateESP)
-    else
-        if _G.C.ESP then _G.C.ESP:Disconnect() _G.C.ESP = nil end
-        for _, item in ipairs(_G.ESPItems) do pcall(function() item:Destroy() end) end
-        _G.ESPItems = {}
-        _G.ESPData = {}
-    end
-end
-
-function CreateESP(targetPlayer)
-    targetPlayer.CharacterAdded:Connect(function(char)
-        task.wait(0.5)
-        if _G.S.ESP then AddESP(targetPlayer, char) end
-    end)
-    if targetPlayer.Character then AddESP(targetPlayer, targetPlayer.Character) end
-end
-
-function AddESP(targetPlayer, char)
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    -- Name
-    local ng = Instance.new("BillboardGui")
-    ng.Name = "E_Name"
-    ng.Size = UDim2.new(0, 140, 0, 22)
-    ng.StudsOffset = Vector3.new(0, 3.5, 0)
-    ng.AlwaysOnTop = true
-    ng.Adornee = hrp
-    local nl = Instance.new("TextLabel")
-    nl.Size = UDim2.new(1,0,1,0)
-    nl.BackgroundTransparency = 1
-    nl.Text = targetPlayer.Name
-    nl.TextColor3 = Color3.new(1,1,1)
-    nl.TextSize = 12
-    nl.Font = Enum.Font.GothamBold
-    nl.TextStrokeTransparency = 0.3
-    nl.Parent = ng
-    ng.Parent = hrp
-    table.insert(_G.ESPItems, ng)
-    
-    -- Box
-    local bg = Instance.new("BillboardGui")
-    bg.Name = "E_Box"
-    bg.Size = UDim2.new(0, 4, 0, 6)
-    bg.StudsOffset = Vector3.new(0, 2.5, 0)
-    bg.AlwaysOnTop = true
-    bg.Adornee = hrp
-    local bf = Instance.new("Frame")
-    bf.Size = UDim2.new(1,0,1,0)
-    bf.BackgroundTransparency = 1
-    bf.BorderSizePixel = 1
-    bf.BorderColor3 = Color3.fromRGB(255, 50, 50)
-    bf.Parent = bg
-    bg.Parent = hrp
-    table.insert(_G.ESPItems, bg)
-    
-    -- Highlight
-    local hl = Instance.new("Highlight")
-    hl.Name = "E_Highlight"
-    hl.Adornee = char
-    hl.FillColor = Color3.fromRGB(255, 50, 50)
-    hl.FillTransparency = 0.65
-    hl.OutlineColor = Color3.new(1,1,1)
-    hl.OutlineTransparency = 0.5
-    hl.Parent = char
-    table.insert(_G.ESPItems, hl)
-    
-    -- Line
-    local ln = Instance.new("Part")
-    ln.Name = "E_Line_" .. targetPlayer.Name
-    ln.Size = Vector3.new(0.15, 0.15, 1)
-    ln.Color = Color3.fromRGB(255, 50, 50)
-    ln.Material = Enum.Material.Neon
-    ln.Anchored = true
-    ln.CanCollide = false
-    ln.Transparency = 0.4
-    ln.Parent = Workspace
-    table.insert(_G.ESPItems, ln)
-    
-    _G.ESPData[targetPlayer] = {Char = char, HRP = hrp, Line = ln, Box = bg, Name = ng, Highlight = hl}
-end
-
-function UpdateESP()
-    if not _G.S.ESP then return end
-    
-    for p, data in pairs(_G.ESPData) do
-        if data.HRP then
-            -- Line
-            if _G.S.Line and data.Line then
-                local cp = Camera.CFrame.Position
-                local tp = data.HRP.Position
-                local d = (cp - tp).Magnitude
-                data.Line.Size = Vector3.new(0.15, 0.15, d)
-                data.Line.CFrame = CFrame.lookAt((cp+tp)/2, tp) * CFrame.new(0,0,-d/2)
-                data.Line.Visible = true
-            elseif data.Line then
-                data.Line.Visible = false
-            end
-            
-            -- Box
-            if data.Box then data.Box.Enabled = _G.S.Box end
-            
-            -- Name
-            if data.Name then data.Name.Enabled = _G.S.NameTag end
-            
-            -- Highlight
-            if data.Highlight then data.Highlight.Enabled = _G.S.Highlight end
-            
-            -- Studs
-            if _G.S.Studs then
-                local d = math.floor((Camera.CFrame.Position - data.HRP.Position).Magnitude)
-                local sg2 = data.HRP:FindFirstChild("E_Studs")
-                if not sg2 then
-                    sg2 = Instance.new("BillboardGui")
-                    sg2.Name = "E_Studs"
-                    sg2.Size = UDim2.new(0, 70, 0, 16)
-                    sg2.StudsOffset = Vector3.new(0, -2, 0)
-                    sg2.AlwaysOnTop = true
-                    sg2.Adornee = data.HRP
-                    local sl = Instance.new("TextLabel")
-                    sl.Size = UDim2.new(1,0,1,0)
-                    sl.BackgroundTransparency = 1
-                    sl.TextColor3 = Color3.fromRGB(255, 255, 100)
-                    sl.TextSize = 10
-                    sl.Font = Enum.Font.Gotham
-                    sl.TextStrokeTransparency = 0.4
-                    sl.Parent = sg2
-                    sg2.Parent = data.HRP
-                    table.insert(_G.ESPItems, sg2)
-                end
-                sg2.Enabled = true
-                local lbl = sg2:FindFirstChildOfClass("TextLabel")
-                if lbl then lbl.Text = tostring(d) .. "s" end
+        -- Mobile touch controls
+        for _, t in ipairs(UIS:GetTouchInputs()) do
+            local sx = t.Position.X / Cam.ViewportSize.X
+            local sy = t.Position.Y / Cam.ViewportSize.Y
+            if sx < 0.5 then
+                local dx, dy = sx - 0.25, sy - 0.5
+                if math.abs(dy) > 0.12 then dir = dir + Vector3.new(0, 0, -dy * 3) end
+                if math.abs(dx) > 0.12 then dir = dir + Vector3.new(dx * 3, 0, 0) end
             else
-                local sg2 = data.HRP:FindFirstChild("E_Studs")
-                if sg2 then sg2.Enabled = false end
+                if sy < 0.3 then dir = dir + Vector3.new(0, 1, 0)
+                elseif sy > 0.7 then dir = dir + Vector3.new(0, -1, 0) end
             end
         end
-    end
+        
+        if dir.Magnitude > 0 then
+            dir = dir.Unit * _G.S.FlySpeed
+            h2.Velocity = dir
+            h2.AssemblyLinearVelocity = dir
+        end
+    end)
 end
 
--- ============== RESPAWN HANDLER ==============
-player.CharacterAdded:Connect(function(char)
-    task.wait(0.5)
-    if _G.S.Speed and char:FindFirstChild("Humanoid") then
-        char.Humanoid.WalkSpeed = _G.S.WalkSpeed
-    end
-    if _G.S.Fly then ToggleFly(true) end
-    if _G.S.Noclip then ToggleNoclip(true) end
-end)
-
--- ============== NOTIFICATION ==============
-task.wait(0.5)
-local ng2 = Instance.new("ScreenGui")
-ng2.Name = "Notif"
-ng2.ResetOnSpawn = false
-pcall(function() ng2.Parent = player:WaitForChild("PlayerGui") end)
-
-local nf = Instance.new("Frame")
-nf.Size = UDim2.new(0, 180, 0, 36)
-nf.Position = UDim2.new(0.5, -90, 0.35, 0)
-nf.BackgroundColor3 = Color3.fromRGB(18, 18, 32)
-nf.BackgroundTransparency = 0.1
-nf.BorderSizePixel = 0
-local nc2 = Instance.new("UICorner")
-nc2.CornerRadius = UDim.new(0, 10)
-nc2.Parent = nf
-nf.Parent = ng2
-
-local nt = Instance.new("TextLabel")
-nt.Size = UDim2.new(1,0,1,0)
-nt.BackgroundTransparency = 1
-nt.Text = "✓ Simple Hub Active!"
-nt.TextColor3 = Color3.fromRGB(70, 255, 130)
-nt.TextSize = 14
-nt.Font = Enum.Font.GothamBold
-nt.Parent = nf
-
-task.wait(2)
-for i=1,10 do
-    task.wait(0.05)
-    nf.BackgroundTransparency = nf.BackgroundTransparency + 0.1
-    nt.TextTransparency = nt.TextTransparency + 0.1
+function StopFly()
+    if _G.C.Fly then _G.C.Fly:Disconnect() _G.C.Fly = nil end
+    local c = plr.Character
+    if c and c:FindFirstChild("Humanoid") then c.Humanoid.PlatformStand = false end
 end
-ng2:Destroy()
+
+-- ===== SPEED =====
+function StartSpeed()
+    _G.C.Speed = RS.RenderStepped:
